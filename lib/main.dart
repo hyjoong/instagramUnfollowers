@@ -47,11 +47,11 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
           onPageFinished: (String url) {
             // 페이지 로딩 완료
           },
-          onWebResourceError: (WebResourceError error) {
-            // 오류 발생 시
-          },
+          onWebResourceError: (WebResourceError error) {},
         ),
       )
+      ..setUserAgent(
+          'Mozilla/5.0 (Android 10; Mobile; rv:68.0) Gecko/68.0 Firefox/68.0')
       ..loadRequest(Uri.parse('https://trackfollows.com/'));
   }
 
@@ -61,9 +61,11 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        toolbarHeight: 0, // 실제 앱바 내용이 필요 없다면 높이를 0으로 설정
+        toolbarHeight: 0,
       ),
-      body: WebViewWidget(controller: controller),
+      body: WebViewWidget(
+        controller: controller,
+      ),
     );
   }
 }
