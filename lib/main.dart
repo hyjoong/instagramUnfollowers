@@ -58,6 +58,11 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        toolbarHeight: 0, // 실제 앱바 내용이 필요 없다면 높이를 0으로 설정
+      ),
       body: WebViewWidget(controller: controller),
     );
   }
