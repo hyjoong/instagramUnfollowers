@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,7 +35,31 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   @override
   void initState() {
     super.initState();
-    controller = WebViewController()
+
+    // 플랫폼별 설정
+    late final PlatformWebViewControllerCreationParams params;
+    if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+      params = WebKitWebViewControllerCreationParams(
+        allowsInlineMediaPlayback: true,
+        mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+      );
+    } else if (WebViewPlatform.instance is AndroidWebViewPlatform) {
+      params = AndroidWebViewControllerCreationParams();
+      // Android 웹뷰 설정
+      final AndroidWebViewController androidController =
+          AndroidWebViewController(
+              params as AndroidWebViewControllerCreationParams);
+      androidController.setMediaPlaybackRequiresUserGesture(false);
+      androidController
+          .setOnShowFileSelector((FileSelectorParams params) async {
+        // 파일 선택기 처리
+        return [];
+      });
+    } else {
+      params = const PlatformWebViewControllerCreationParams();
+    }
+
+    controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
       ..setNavigationDelegate(
