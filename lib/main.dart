@@ -5,6 +5,10 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
 import 'firebase_options.dart';
 
 // FCM 백그라운드 메시지 핸들러
@@ -60,26 +64,24 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   void initState() {
     super.initState();
     _initializeFirebaseMessaging();
+    _requestPermissions();
+    _initializeWebView();
+  }
 
-    // 플랫폼별 설정
+  Future<void> _requestPermissions() async {
+    if (Platform.isAndroid) {
+      await Permission.storage.request();
+      await Permission.mediaLibrary.request();
+    }
+  }
+
+  void _initializeWebView() {
     late final PlatformWebViewControllerCreationParams params;
     if (WebViewPlatform.instance is WebKitWebViewPlatform) {
       params = WebKitWebViewControllerCreationParams(
         allowsInlineMediaPlayback: true,
         mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
       );
-    } else if (WebViewPlatform.instance is AndroidWebViewPlatform) {
-      params = AndroidWebViewControllerCreationParams();
-      // Android 웹뷰 설정
-      final AndroidWebViewController androidController =
-          AndroidWebViewController(
-              params as AndroidWebViewControllerCreationParams);
-      androidController.setMediaPlaybackRequiresUserGesture(false);
-      androidController
-          .setOnShowFileSelector((FileSelectorParams params) async {
-        // 파일 선택기 처리
-        return [];
-      });
     } else {
       params = const PlatformWebViewControllerCreationParams();
     }
@@ -87,23 +89,99 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
+      ..enableZoom(false)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onProgress: (int progress) {
-            // 페이지 로딩 진행 상황
-          },
-          onPageStarted: (String url) {
-            // 페이지 로딩 시작
-          },
+          onProgress: (int progress) {},
+          onPageStarted: (String url) {},
           onPageFinished: (String url) {
-            // 페이지 로딩 완료
+            _injectJavaScript();
           },
-          onWebResourceError: (WebResourceError error) {},
+          onWebResourceError: (WebResourceError error) {
+            print('웹뷰 에러: ${error.description}');
+          },
         ),
       )
       ..setUserAgent(
           'Mozilla/5.0 (Android 10; Mobile; rv:68.0) Gecko/68.0 Firefox/68.0')
-      ..loadRequest(Uri.parse('https://trackfollows.com/'));
+      ..loadRequest(
+        Uri.parse('https://trackfollows.com/'),
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept',
+        },
+      );
+
+    // Android 웹뷰 설정
+    if (controller.platform is AndroidWebViewController) {
+      AndroidWebViewController.enableDebugging(true);
+      (controller.platform as AndroidWebViewController)
+          .setMediaPlaybackRequiresUserGesture(false);
+    }
+
+    // JavaScript 채널 설정
+    controller.addJavaScriptChannel(
+      'flutter_inappwebview',
+      onMessageReceived: (JavaScriptMessage message) async {
+        if (message.message == 'openFilePicker') {
+          await _pickFile();
+        }
+      },
+    );
+  }
+
+  void _injectJavaScript() {
+    controller.runJavaScript('''
+      // 파일 선택 버튼 클릭 이벤트 처리
+      document.addEventListener('click', function(e) {
+        const target = e.target;
+        if (target && (
+          target.matches('input[type="file"]') ||
+          target.matches('button[type="file"]') ||
+          target.closest('input[type="file"]') ||
+          target.closest('button[type="file"]')
+        )) {
+          e.preventDefault();
+          e.stopPropagation();
+          window.flutter_inappwebview.postMessage('openFilePicker');
+        }
+      }, true);
+    ''');
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json', 'html'],
+        allowMultiple: false,
+        withData: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        PlatformFile file = result.files.first;
+        if (file.bytes != null) {
+          String fileData = base64Encode(file.bytes!);
+
+          // 파일 데이터를 웹뷰로 전달
+          await controller.runJavaScript('''
+            const fileInput = document.querySelector('input[type="file"]');
+            if (fileInput) {
+              const file = new File(['$fileData'], '${file.name}', {
+                type: 'application/octet-stream'
+              });
+              const dataTransfer = new DataTransfer();
+              dataTransfer.items.add(file);
+              fileInput.files = dataTransfer.files;
+              fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          ''');
+        }
+      }
+    } catch (e) {
+      print('파일 선택 에러: $e');
+    }
   }
 
   Future<void> _initializeFirebaseMessaging() async {
