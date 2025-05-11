@@ -5,6 +5,10 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
 import 'firebase_options.dart';
 
 // FCM 백그라운드 메시지 핸들러
@@ -60,26 +64,24 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   void initState() {
     super.initState();
     _initializeFirebaseMessaging();
+    _requestPermissions();
+    _initializeWebView();
+  }
 
-    // 플랫폼별 설정
+  Future<void> _requestPermissions() async {
+    if (Platform.isAndroid) {
+      await Permission.storage.request();
+      await Permission.mediaLibrary.request();
+    }
+  }
+
+  void _initializeWebView() {
     late final PlatformWebViewControllerCreationParams params;
     if (WebViewPlatform.instance is WebKitWebViewPlatform) {
       params = WebKitWebViewControllerCreationParams(
         allowsInlineMediaPlayback: true,
         mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
       );
-    } else if (WebViewPlatform.instance is AndroidWebViewPlatform) {
-      params = AndroidWebViewControllerCreationParams();
-      // Android 웹뷰 설정
-      final AndroidWebViewController androidController =
-          AndroidWebViewController(
-              params as AndroidWebViewControllerCreationParams);
-      androidController.setMediaPlaybackRequiresUserGesture(false);
-      androidController
-          .setOnShowFileSelector((FileSelectorParams params) async {
-        // 파일 선택기 처리
-        return [];
-      });
     } else {
       params = const PlatformWebViewControllerCreationParams();
     }
@@ -87,25 +89,21 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
+      ..enableZoom(false)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onProgress: (int progress) {
-            // 페이지 로딩 진행 상황
-          },
-          onPageStarted: (String url) {
-            // 페이지 로딩 시작
-          },
+          onProgress: (int progress) {},
+          onPageStarted: (String url) {},
           onPageFinished: (String url) {
-            // 페이지 로딩 완료
+            _injectJavaScript();
           },
-          onWebResourceError: (WebResourceError error) {},
+          onWebResourceError: (WebResourceError error) {
+            print('웹뷰 에러: ${error.description}');
+          },
         ),
       )
       ..setUserAgent(
           'Mozilla/5.0 (Android 10; Mobile; rv:68.0) Gecko/68.0 Firefox/68.0')
-<<<<<<< Updated upstream
-      ..loadRequest(Uri.parse('https://trackfollows.com/'));
-=======
       ..loadRequest(
         Uri.parse('https://trackfollows.com/'),
         headers: {
@@ -205,7 +203,6 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     } catch (e) {
       print('파일 선택 에러: $e');
     }
->>>>>>> Stashed changes
   }
 
   Future<void> _initializeFirebaseMessaging() async {
