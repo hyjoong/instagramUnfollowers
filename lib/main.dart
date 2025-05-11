@@ -154,7 +154,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['json', 'html'],
+        allowedExtensions: ['zip', 'json', 'html'],
         allowMultiple: false,
         withData: true,
       );
@@ -168,13 +168,34 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
           await controller.runJavaScript('''
             const fileInput = document.querySelector('input[type="file"]');
             if (fileInput) {
-              const file = new File(['$fileData'], '${file.name}', {
-                type: 'application/octet-stream'
+              // base64 데이터를 ArrayBuffer로 변환
+              const binaryString = atob('$fileData');
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              
+              // Blob 생성
+              const blob = new Blob([bytes], { type: 'application/octet-stream' });
+              
+              // File 객체 생성
+              const file = new File([blob], '${file.name}', {
+                type: '${file.extension == 'zip' ? 'application/zip' : 'application/octet-stream'}'
               });
+              
+              // DataTransfer 객체 생성 및 파일 설정
               const dataTransfer = new DataTransfer();
               dataTransfer.items.add(file);
               fileInput.files = dataTransfer.files;
-              fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+              
+              // change 이벤트 발생
+              const event = new Event('change', { bubbles: true });
+              fileInput.dispatchEvent(event);
+              
+              // 파일 업로드 완료 후 분석 시작
+              if (typeof analyzeFiles === 'function') {
+                analyzeFiles();
+              }
             }
           ''');
         }
@@ -195,7 +216,6 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       // FCM 토큰 가져오기
       String? token = await _firebaseMessaging.getToken();
-      print('FCM Token: $token');
 
       // 로컬 알림 설정
       const AndroidInitializationSettings initializationSettingsAndroid =
