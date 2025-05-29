@@ -259,15 +259,53 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        toolbarHeight: 0,
-      ),
-      body: WebViewWidget(
-        controller: controller,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        // 웹뷰에서 뒤로갈 수 있는지 확인
+        final canGoBack = await controller.canGoBack();
+        if (canGoBack) {
+          // 웹뷰에서 뒤로가기
+          await controller.goBack();
+        } else {
+          final shouldExit = await _showExitDialog();
+          if (shouldExit && context.mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          toolbarHeight: 0,
+        ),
+        body: WebViewWidget(
+          controller: controller,
+        ),
       ),
     );
+  }
+
+  Future<bool> _showExitDialog() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('앱 종료'),
+            content: const Text('앱을 종료하시겠습니까?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('취소'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('종료'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 }
