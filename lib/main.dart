@@ -122,10 +122,10 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
 
     // JavaScript 채널 설정
     controller.addJavaScriptChannel(
-      'flutter_inappwebview',
+      'FlutterFileUpload',
       onMessageReceived: (JavaScriptMessage message) async {
-        if (message.message == 'openFilePicker') {
-          await _pickFile();
+        if (message.message == 'pickFile') {
+          await _handleFileSelection();
         }
       },
     );
@@ -133,24 +133,103 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
 
   void _injectJavaScript() {
     controller.runJavaScript('''
-      // 파일 선택 버튼 클릭 이벤트 처리
-      document.addEventListener('click', function(e) {
-        const target = e.target;
-        if (target && (
-          target.matches('input[type="file"]') ||
-          target.matches('button[type="file"]') ||
-          target.closest('input[type="file"]') ||
-          target.closest('button[type="file"]')
-        )) {
-          e.preventDefault();
-          e.stopPropagation();
-          window.flutter_inappwebview.postMessage('openFilePicker');
+      
+      window.flutterFileUploaded = false;
+      
+      function interceptFileInput() {
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        fileInputs.forEach(function(input) {
+          input.removeEventListener('click', handleFileClick);
+          input.addEventListener('click', handleFileClick);
+        });
+      }
+      
+      function handleFileClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.FlutterFileUpload.postMessage('pickFile');
+      }
+      
+      // "다시 분석하기" 버튼 클릭 감지
+      function interceptResetButton() {
+        // 기존 이벤트 리스너가 있는 버튼들을 찾아서 래핑
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(function(button) {
+          if (button.textContent && button.textContent.includes('analyze')) {
+            button.removeEventListener('click', handleResetClick);
+            button.addEventListener('click', handleResetClick);
+          }
+        });
+      }
+      
+      function handleResetClick(e) {
+        window.flutterFileUploaded = false;
+        setTimeout(() => {
+          window.FlutterFileUpload.postMessage('resetComplete');
+        }, 100);
+      }
+      
+      // 웹뷰용 파일 설정 함수
+      window.setFlutterFile = function(fileName, fileData, fileType) {
+        
+        const fileInput = document.querySelector('input[type="file"]#instagram-data');
+        if (!fileInput) {
+          return false;
         }
-      }, true);
+        
+        try {
+          const binaryString = atob(fileData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          
+          const blob = new Blob([bytes], { type: fileType });
+          const file = new File([blob], fileName, { type: fileType });
+          
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          fileInput.files = dataTransfer.files;
+          
+          const changeEvent = new Event('change', { bubbles: true });
+          fileInput.dispatchEvent(changeEvent);
+          
+          window.flutterFileUploaded = true;
+          return true;
+        } catch (error) {
+          return false;
+        }
+      };
+      
+      const observer = new MutationObserver(function(mutations) {
+        let shouldIntercept = false;
+        mutations.forEach(function(mutation) {
+          if (mutation.addedNodes.length > 0) {
+            shouldIntercept = true;
+          }
+        });
+        
+        if (shouldIntercept) {
+          setTimeout(() => {
+            interceptFileInput();
+            interceptResetButton();
+          }, 100);
+        }
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+      
+      setTimeout(() => {
+        interceptFileInput();
+        interceptResetButton();
+      }, 500);
     ''');
   }
 
-  Future<void> _pickFile() async {
+  Future<void> _handleFileSelection() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -163,45 +242,30 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         PlatformFile file = result.files.first;
         if (file.bytes != null) {
           String fileData = base64Encode(file.bytes!);
+          String fileType = file.extension == 'zip'
+              ? 'application/zip'
+              : 'application/octet-stream';
 
-          // 파일 데이터를 웹뷰로 전달
-          await controller.runJavaScript('''
-            const fileInput = document.querySelector('input[type="file"]');
-            if (fileInput) {
-              // base64 데이터를 ArrayBuffer로 변환
-              const binaryString = atob('$fileData');
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-              
-              // Blob 생성
-              const blob = new Blob([bytes], { type: 'application/octet-stream' });
-              
-              // File 객체 생성
-              const file = new File([blob], '${file.name}', {
-                type: '${file.extension == 'zip' ? 'application/zip' : 'application/octet-stream'}'
-              });
-              
-              // DataTransfer 객체 생성 및 파일 설정
-              const dataTransfer = new DataTransfer();
-              dataTransfer.items.add(file);
-              fileInput.files = dataTransfer.files;
-              
-              // change 이벤트 발생
-              const event = new Event('change', { bubbles: true });
-              fileInput.dispatchEvent(event);
-              
-              // 파일 업로드 완료 후 분석 시작
-              if (typeof analyzeFiles === 'function') {
-                analyzeFiles();
-              }
-            }
-          ''');
+          // 웹뷰에 파일 설정
+          bool success = await _setFileInWebView(file.name, fileData, fileType);
         }
-      }
+      } else {}
     } catch (e) {
-      print('파일 선택 에러: $e');
+      print('file picker error: $e');
+    }
+  }
+
+  Future<bool> _setFileInWebView(
+      String fileName, String fileData, String fileType) async {
+    try {
+      final result = await controller.runJavaScriptReturningResult('''
+        window.setFlutterFile('$fileName', '$fileData', '$fileType');
+      ''');
+
+      return result == true || result.toString() == 'true';
+    } catch (e) {
+      print('webview error: $e');
+      return false;
     }
   }
 
