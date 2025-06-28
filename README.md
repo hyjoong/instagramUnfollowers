@@ -38,7 +38,8 @@ Flutter WebView 기반으로 만든 **인스타그램 언팔 확인 웹뷰 앱**
 ---
 
 - 🌐 [웹에서 바로 체험하기](https://trackfollows.com)
-- 📱 [Google Play 스토어에서 다운로드](https://play.google.com/store/apps/details?id=com.hyjoong.trackfollows&hl=ko)
+- 📱 [Google Play 스토어에서 다운로드](https://play.google.com/store/apps/details?id=com.hyjoong.trackfollows)
+- 🍎 [App Store에서 다운로드](https://apps.apple.com/us/app/trackfollows-인스타-언팔-확인/id6747464895)
 
 ## 📖 관련 블로그 글
 
