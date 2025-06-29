@@ -3,76 +3,66 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 
-// FCM 백그라운드 메시지 핸들러
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-}
-
 class FirebaseService {
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  static bool _isInitialized = false;
 
   static Future<void> initializeFirebase() async {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (_isInitialized) {
+      return; // 이미 초기화되었으면 중복 초기화 방지
+    }
 
-    // FCM 백그라운드 핸들러 설정
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    try {
+      await Firebase.initializeApp();
+      _isInitialized = true;
+    } catch (e) {
+      // Firebase 초기화 실패 시에도 앱이 계속 실행되도록 함
+      print('Firebase initialization failed: $e');
+    }
   }
 
   Future<void> initializeMessaging() async {
-    // 알림 권한 요청
-    NotificationSettings settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    try {
+      // Firebase가 초기화되지 않았으면 초기화
+      if (!_isInitialized) {
+        await initializeFirebase();
+      }
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      // FCM 토큰 가져오기
-      String? token = await _firebaseMessaging.getToken();
-
-      // 로컬 알림 설정
-      const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
-      const DarwinInitializationSettings initializationSettingsIOS =
-          DarwinInitializationSettings();
-      const InitializationSettings initializationSettings =
-          InitializationSettings(
-        android: initializationSettingsAndroid,
-        iOS: initializationSettingsIOS,
+      // FCM 권한 요청
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+      NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
       );
 
-      await _flutterLocalNotificationsPlugin.initialize(
-        initializationSettings,
-      );
-
-      // 포그라운드 메시지 핸들링
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        RemoteNotification? notification = message.notification;
-        AndroidNotification? android = message.notification?.android;
-
-        if (notification != null && android != null) {
-          _flutterLocalNotificationsPlugin.show(
-            notification.hashCode,
-            notification.title,
-            notification.body,
-            NotificationDetails(
-              android: AndroidNotificationDetails(
-                'trackfollows_channel',
-                'TrackFollows Notifications',
-                channelDescription: 'TrackFollows 알림 채널',
-                importance: Importance.max,
-                priority: Priority.high,
-              ),
-            ),
-          );
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        // FCM 토큰 가져오기
+        String? token = await messaging.getToken();
+        if (token != null) {
+          // 토큰을 서버에 전송하거나 로컬에 저장
         }
+      }
+
+      // 포그라운드 메시지 핸들러
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        // 포그라운드에서 메시지 수신 시 처리
       });
+
+      // 백그라운드 메시지 핸들러
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
+    } catch (e) {
+      // 메시징 초기화 실패 시에도 앱이 계속 실행되도록 함
+      print('Firebase messaging initialization failed: $e');
     }
   }
+}
+
+// 백그라운드 메시지 핸들러 (최상위 레벨 함수여야 함)
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // 백그라운드에서 메시지 수신 시 처리
 }
