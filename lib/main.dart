@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'firebase_options.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // FCM 백그라운드 메시지 핸들러
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -92,13 +93,25 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
       ..enableZoom(false)
       ..setNavigationDelegate(
         NavigationDelegate(
+          onNavigationRequest: (NavigationRequest request) async {
+            final url = request.url;
+            if (url.startsWith('https://instagram.com') ||
+                url.startsWith('https://www.instagram.com')) {
+              if (await canLaunchUrl(Uri.parse(url))) {
+                await launchUrl(Uri.parse(url),
+                    mode: LaunchMode.externalApplication);
+                return NavigationDecision.prevent;
+              }
+            }
+            return NavigationDecision.navigate;
+          },
           onProgress: (int progress) {},
           onPageStarted: (String url) {},
           onPageFinished: (String url) {
             _injectJavaScript();
           },
           onWebResourceError: (WebResourceError error) {
-            print('웹뷰 에러: ${error.description}');
+            print('웹뷰 에러:  [35m${error.description} [0m');
           },
         ),
       )
