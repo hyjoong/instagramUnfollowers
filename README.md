@@ -1,5 +1,7 @@
 # 📱 Instagram UnFollower Tracker
 
+![TrackFollows Google Play thumbnail](assets/screenshots/thumbnail.png)
+
 Flutter WebView 기반으로 만든 **인스타그램 언팔 확인 웹뷰 앱**입니다.  
 인스타그램에서 받은 데이터 파일을 업로드하면, **나를 언팔한 계정을 분석**해줍니다.
 
@@ -34,20 +36,65 @@ Flutter WebView 기반으로 만든 **인스타그램 언팔 확인 웹뷰 앱**
 
 ---
 
-## 📱 앱 성과 요약 (2025.07.04 ~ 2025.07.31 기준)
+## 📱 앱 성과 요약
 
 ### Android (Google Play)
 
-- 설치 수: 1,670건
-- 월간 활성 사용자(MAU): 1,620명
+#### 📊 핵심 지표
 
-![](https://velog.velcdn.com/images/hyunjoong/post/ce1a5ce0-2211-442d-9e4a-593fa791142c/image.png)
+| 기간                    | 기기 획득 수 | MAU        |
+| ----------------------- | ------------ | ---------- |
+| 2025.07.04 ~ 2025.07.31 | **1.67천**   | **1.62천** |
+| 2025.09.15 ~ 2025.10.14 | **2.48천**   | **3.08천** |
+
+- 첫 실행 수: 2025.07 기준 **1.00천**, 2025.10 기준 **1.46천**
+- 7일 유지율: 2025.07 기준 **37%**, 2025.10 기준 **60%**
+
+#### 📸 스크린샷
+
+<table>
+  <tr>
+    <th>2025.07 스냅샷</th>
+  </tr>
+  <tr>
+    <td>
+      <img src="https://velog.velcdn.com/images/hyunjoong/post/ce1a5ce0-2211-442d-9e4a-593fa791142c/image.png" alt="Google Play Console Snapshot 2025.07" width="820" height="340" />
+    </td> 
+  </tr>
+    <th>2025.10 스냅샷</th>
+
+  <tr>
+   <td>
+      <img src="https://velog.velcdn.com/images/hyunjoong/post/baa561dc-f17a-49c6-84b4-eebd3711c2d1/image.png" alt="Google Play Console Snapshot 2025.10" width="820" height="340" />
+    </td>
+  </tr>
+</table>
 
 ### iOS (App Store)
 
-- 설치 수: **612건**
+#### 📊 핵심 지표
 
-![](https://velog.velcdn.com/images/hyunjoong/post/f9e29a9a-10f0-4187-b77f-40ea762510f9/image.png)
+| 기간                    | 다운로드 수 |
+| ----------------------- | ----------- |
+| 2025.07.04 ~ 2025.07.31 | **612**     |
+| 2025.09.15 ~ 2025.10.14 | **3.6천**   |
+
+#### 📸 스크린샷
+
+<table>
+  <tr>
+    <th>2025.07 스냅샷</th>
+    <th>2025.10 스냅샷</th>
+  </tr>
+  <tr>
+    <td>
+      <img src="https://velog.velcdn.com/images/hyunjoong/post/f9e29a9a-10f0-4187-b77f-40ea762510f9/image.png" alt="App Store Snapshot 2025.07" width="620" height="540" />
+    </td>
+    <td>
+      <img src="https://velog.velcdn.com/images/hyunjoong/post/4eb219e2-b04c-4445-b753-34973b91d7ec/image.png" alt="App Store Snapshot 2025.10" width="620" height="540" />
+    </td>
+  </tr>
+</table>
 
 ---
 
