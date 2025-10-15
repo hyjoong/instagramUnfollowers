@@ -84,14 +84,18 @@ Flutter WebView 기반으로 만든 **인스타그램 언팔 확인 웹뷰 앱**
 <table>
   <tr>
     <th>2025.07 스냅샷</th>
-    <th>2025.10 스냅샷</th>
   </tr>
   <tr>
     <td>
-      <img src="https://velog.velcdn.com/images/hyunjoong/post/f9e29a9a-10f0-4187-b77f-40ea762510f9/image.png" alt="App Store Snapshot 2025.07" width="620" height="540" />
-    </td>
+      <img src="https://velog.velcdn.com/images/hyunjoong/post/f9e29a9a-10f0-4187-b77f-40ea762510f9/image.png" alt="App Store Snapshot 2025.07" width="820" height="580" />
+    </td> 
+  </tr>
+  <tr>
+     <th>2025.10 스냅샷</th> 
+  </tr>
+  <tr>
     <td>
-      <img src="https://velog.velcdn.com/images/hyunjoong/post/4eb219e2-b04c-4445-b753-34973b91d7ec/image.png" alt="App Store Snapshot 2025.10" width="620" height="540" />
+      <img src="https://velog.velcdn.com/images/hyunjoong/post/4eb219e2-b04c-4445-b753-34973b91d7ec/image.png" alt="App Store Snapshot 2025.10" width="820" height="580" />
     </td>
   </tr>
 </table>
@@ -111,7 +115,7 @@ Flutter WebView 기반으로 만든 **인스타그램 언팔 확인 웹뷰 앱**
 - 🔗 [웹에서 바로 체험하기](https://trackfollows.com)
 - 📲 [Google Play에서 설치하기](https://play.google.com/store/apps/details?id=com.hyjoong.trackfollows&hl=ko)
 
-- [🍎 App Store에서 설치하기](https://apps.apple.com/ko/app/trackfollows-인스타-언팔-확인/id6747464895)
+- 🍎 [App Store에서 설치하기](https://apps.apple.com/ko/app/trackfollows-인스타-언팔-확인/id6747464895)
 
 ---
 
