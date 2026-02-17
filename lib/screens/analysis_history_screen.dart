@@ -86,7 +86,7 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
 
   String _formatDate(String timestamp) {
     try {
-      final date = DateTime.parse(timestamp);
+      final date = DateTime.parse(timestamp).toLocal();
       return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return timestamp;
@@ -204,6 +204,16 @@ TrackFollows 앱으로 생성됨
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              AnalysisVisualizationScreen(
+                            analysisId: result.id,
+                          ),
+                        ),
+                      );
+                    },
                     title: Text(
                       '분석 ${_history.length - index}',
                       style: const TextStyle(
@@ -235,20 +245,6 @@ TrackFollows 앱으로 생성됨
                         IconButton(
                           icon: const Icon(Icons.share, color: Colors.blue),
                           onPressed: () => _shareAnalysis(result),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.bar_chart,
-                              color: Color(0xFFEC4899)),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AnalysisVisualizationScreen(
-                                  analysisId: result.id,
-                                ),
-                              ),
-                            );
-                          },
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_outline,

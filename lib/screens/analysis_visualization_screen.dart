@@ -548,7 +548,7 @@ class _AnalysisVisualizationScreenState
 
   String _formatDate(String timestamp) {
     try {
-      final date = DateTime.parse(timestamp);
+      final date = DateTime.parse(timestamp).toLocal();
       return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     } catch (e) {
       return timestamp;
