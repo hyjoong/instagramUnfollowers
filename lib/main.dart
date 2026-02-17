@@ -125,13 +125,19 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
             _fileHandler!.getFileType(result.files.first.extension);
 
         if (fileData != null && fileName != null) {
-          // 웹뷰에 파일 설정
-          bool success = await _webViewService!
+          await _webViewService!
               .setFileInWebView(fileName, fileData, fileType);
         }
       }
     } catch (e) {
-      // 파일 선택 에러 처리
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('파일 선택에 실패했습니다'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -220,7 +226,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
           // 메인 웹뷰 화면
           PopScope(
             canPop: false,
-            onPopInvoked: (didPop) async {
+            onPopInvokedWithResult: (didPop, result) async {
               if (didPop) return;
               // 웹뷰에서 뒤로갈 수 있는지 확인
               final canGoBack = await _webViewService!.canGoBack();
