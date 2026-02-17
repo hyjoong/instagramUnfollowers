@@ -25,27 +25,26 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
   void initState() {
     super.initState();
     _loadHistory();
-    // 5초마다 자동 갱신
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (mounted) {
-        _loadHistory();
-      }
-    });
+    _setupAutoRefresh();
+  }
+
+  Future<void> _setupAutoRefresh() async {
+    final prefs = await SharedPreferences.getInstance();
+    final autoRefreshEnabled = prefs.getBool('auto_refresh_enabled') ?? true;
+
+    if (autoRefreshEnabled) {
+      _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        if (mounted) {
+          _loadHistory();
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
     super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // 탭이 활성화될 때마다 히스토리 갱신
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadHistory();
-    });
   }
 
   Future<void> _loadHistory() async {
@@ -60,9 +59,7 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
         _isLoading = false;
       });
 
-      print('Loaded ${_history.length} history items');
     } catch (e) {
-      print('Error loading history: $e');
       setState(() {
         _isLoading = false;
       });
@@ -70,6 +67,29 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
   }
 
   Future<void> _deleteHistoryItem(int index) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('분석 기록 삭제'),
+        content: const Text('이 분석 기록을 삭제하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(
+              '삭제',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       final prefs = await SharedPreferences.getInstance();
       _history.removeAt(index);
@@ -79,8 +99,24 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
 
       await prefs.setStringList('analysis_history', historyJson);
       setState(() {});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('분석 기록이 삭제되었습니다'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
-      print('Error deleting history item: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('삭제에 실패했습니다'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -114,6 +150,7 @@ TrackFollows 앱으로 생성됨
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -195,7 +232,7 @@ TrackFollows 앱으로 생성됨
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                         spreadRadius: 1,
                         blurRadius: 10,
                         offset: const Offset(0, 2),
