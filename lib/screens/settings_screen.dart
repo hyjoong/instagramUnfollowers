@@ -3,8 +3,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'faq_screen.dart';
 import 'terms_screen.dart';
 import 'privacy_screen.dart';
-import 'analysis_history_screen.dart';
-import 'theme_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -81,18 +79,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            _buildSectionTitle('분석 히스토리'),
-            const SizedBox(height: 12),
-            _buildButton(
-              '분석 히스토리 보기',
-              Icons.history,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const AnalysisHistoryScreen()),
-              ),
-            ),
-            const SizedBox(height: 24),
             _buildSectionTitle('앱 정보'),
             const SizedBox(height: 12),
             _buildInfoCard(),
@@ -119,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: const Color(0xFFEC4899).withOpacity(0.1),
+          color: const Color(0xFFEC4899).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -153,7 +139,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -182,8 +168,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
+          if (_appVersion.isNotEmpty)
+            Text(
+              '버전 $_appVersion ($_buildNumber)',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          const SizedBox(height: 4),
           const Text(
-            '© 2025 TrackFollows. 모든 권리 보유.',
+            '© 2025-2026 TrackFollows. 모든 권리 보유.',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey,
