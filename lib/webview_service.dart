@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:file_picker/file_picker.dart';
 import 'file_handler.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 class WebViewService {
@@ -39,7 +42,6 @@ class WebViewService {
             // 페이지 로딩 시작
           },
           onPageFinished: (String url) async {
-            _isWebViewReady = true;
             // 페이지 로딩 완료 후 Flutter 식별자 재설정
             await controller?.runJavaScript('''
               if (!window.isFlutterWebView) {
@@ -48,6 +50,17 @@ class WebViewService {
                 console.log('Flutter WebView re-initialized');
               }
             ''');
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            // Android에서만 인스타그램 링크를 Chrome Custom Tab으로 열기
+            if (Platform.isAndroid &&
+                request.url.contains('instagram.com/') &&
+                !request.url.contains('trackfollows.com')) {
+              launchUrl(Uri.parse(request.url),
+                  mode: LaunchMode.inAppBrowserView);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
           },
           onWebResourceError: (WebResourceError error) {
             print('WebView error: ${error.description}');
@@ -83,6 +96,23 @@ class WebViewService {
         },
       )
       ..loadRequest(Uri.parse('https://trackfollows.com'));
+
+    // Android에서 <input type="file"> 지원
+    if (Platform.isAndroid) {
+      final androidController =
+          controller!.platform as AndroidWebViewController;
+      androidController
+          .setOnShowFileSelector((FileSelectorParams params) async {
+        final result = await FilePicker.platform.pickFiles();
+        if (result != null && result.files.isNotEmpty) {
+          final path = result.files.first.path;
+          if (path != null) {
+            return [Uri.file(path).toString()];
+          }
+        }
+        return [];
+      });
+    }
 
     // Flutter 웹뷰 식별자 설정
     await controller?.runJavaScript('''
@@ -147,6 +177,97 @@ class WebViewService {
     }
   }
 
+  void _injectJavaScript() {
+    try {
+      controller?.runJavaScript('''
+        console.log('Injecting JavaScript into WebView');
+        
+        // Flutter 웹뷰 식별자 설정
+        window.isFlutterWebView = true;
+        window.flutterApp = true;
+        window.isMobileApp = true;
+        window.platform = 'flutter';
+        
+        // Flutter JavaScript 채널 설정
+        window.Flutter = {
+          postMessage: function(message) {
+            console.log('Sending message to Flutter:', message);
+            Flutter.postMessage(message);
+          }
+        };
+        
+        // 분석 완료 시 알림 전송 함수
+        function sendAnalysisNotification(data) {
+          try {
+            console.log('Sending analysis notification:', data);
+            
+            // Flutter 채널로 메시지 전송
+            if (window.Flutter) {
+              window.Flutter.postMessage(JSON.stringify({
+                type: "unfollower_analysis_complete",
+                data: data
+              }));
+            }
+            
+            // 직접 채널로도 전송
+            if (window.unfollowerNotification) {
+              window.unfollowerNotification.postMessage(JSON.stringify({
+                type: "unfollower_analysis_complete",
+                data: data
+              }));
+            }
+          } catch (error) {
+            console.log("알림 전송 실패:", error);
+          }
+        }
+        
+        // 기존 분석 완료 코드에 알림 추가
+        const originalShowResults = window.showResults;
+        if (originalShowResults) {
+          window.showResults = function(unfollowersWithDates, fansWithDates, mutualFollowsWithDates, followers, following) {
+            console.log('Analysis results received');
+            
+            // 기존 결과 표시
+            originalShowResults(unfollowersWithDates, fansWithDates, mutualFollowsWithDates, followers, following);
+            
+            // 알림 전송
+            sendAnalysisNotification({
+              unfollowersCount: unfollowersWithDates.length,
+              fansCount: fansWithDates.length,
+              mutualCount: mutualFollowsWithDates.length,
+              totalFollowers: followers.length,
+              totalFollowing: following.length
+            });
+          };
+        }
+        
+        // 파일 데이터 설정 함수
+        window.setFileData = function(fileName, fileData, fileType) {
+          console.log('Setting file data:', fileName, fileType);
+          // 웹사이트의 파일 처리 함수 호출
+          if (window.handleFileUpload) {
+            window.handleFileUpload(fileName, fileData, fileType);
+          }
+        };
+        
+        // 웹뷰 식별자 확인 함수
+        window.isFlutterWebView = function() {
+          return true;
+        };
+        
+        console.log('JavaScript injection completed');
+        console.log('Flutter WebView identifiers set:', {
+          isFlutterWebView: window.isFlutterWebView,
+          flutterApp: window.flutterApp,
+          isMobileApp: window.isMobileApp,
+          platform: window.platform
+        });
+      ''');
+    } catch (e) {
+      print('Failed to inject JavaScript: $e');
+    }
+  }
+
   void _handleJavaScriptMessage(String message) {
     try {
       final data = Map<String, dynamic>.from(
@@ -194,7 +315,7 @@ class WebViewService {
         '총 팔로잉: $totalFollowing명';
 
     // 로컬 알림 표시
-    notificationsPlugin.show(
+    FlutterLocalNotificationsPlugin().show(
       0,
       '인스타그램 분석 완료',
       message,
