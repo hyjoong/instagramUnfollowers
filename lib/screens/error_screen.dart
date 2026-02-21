@@ -86,19 +86,6 @@ class ErrorScreen extends StatelessWidget {
                   ),
                 ),
 
-              const SizedBox(height: 16),
-
-              // 홈으로 돌아가기
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
-                  '설정으로 이동',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFFEC4899),
-                  ),
-                ),
-              ),
             ],
           ),
         ),

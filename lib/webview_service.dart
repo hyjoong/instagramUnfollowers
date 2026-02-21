@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
-import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:file_picker/file_picker.dart';
 import 'file_handler.dart';
-import 'javascript_injector.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 class WebViewService {
@@ -51,6 +51,17 @@ class WebViewService {
               }
             ''');
           },
+          onNavigationRequest: (NavigationRequest request) {
+            // Android에서만 인스타그램 링크를 Chrome Custom Tab으로 열기
+            if (Platform.isAndroid &&
+                request.url.contains('instagram.com/') &&
+                !request.url.contains('trackfollows.com')) {
+              launchUrl(Uri.parse(request.url),
+                  mode: LaunchMode.inAppBrowserView);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
           onWebResourceError: (WebResourceError error) {
             print('WebView error: ${error.description}');
           },
@@ -85,6 +96,23 @@ class WebViewService {
         },
       )
       ..loadRequest(Uri.parse('https://trackfollows.com'));
+
+    // Android에서 <input type="file"> 지원
+    if (Platform.isAndroid) {
+      final androidController =
+          controller!.platform as AndroidWebViewController;
+      androidController
+          .setOnShowFileSelector((FileSelectorParams params) async {
+        final result = await FilePicker.platform.pickFiles();
+        if (result != null && result.files.isNotEmpty) {
+          final path = result.files.first.path;
+          if (path != null) {
+            return [Uri.file(path).toString()];
+          }
+        }
+        return [];
+      });
+    }
 
     // Flutter 웹뷰 식별자 설정
     await controller?.runJavaScript('''

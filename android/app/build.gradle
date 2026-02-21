@@ -19,12 +19,13 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.trackfollows"
-    compileSdk = 35
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 36
+    ndkVersion = "28.0.12433566"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
@@ -68,4 +69,5 @@ flutter {
 
 dependencies {
     implementation platform('com.google.firebase:firebase-bom:32.7.1')
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
 }

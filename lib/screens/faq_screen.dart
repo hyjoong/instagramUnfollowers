@@ -8,8 +8,6 @@ class FAQScreen extends StatefulWidget {
 }
 
 class _FAQScreenState extends State<FAQScreen> {
-  int? _expandedIndex;
-
   final List<FAQItem> _faqItems = [
     FAQItem(
       question: "이 서비스는 안전한가요?",
@@ -81,7 +79,7 @@ class _FAQScreenState extends State<FAQScreen> {
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     spreadRadius: 1,
                     blurRadius: 3,
                     offset: const Offset(0, 1),
@@ -95,8 +93,6 @@ class _FAQScreenState extends State<FAQScreen> {
                 separatorBuilder: (context, index) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final item = _faqItems[index];
-                  final isExpanded = _expandedIndex == index;
-
                   return ExpansionTile(
                     title: Text(
                       item.question,
@@ -127,15 +123,10 @@ class _FAQScreenState extends State<FAQScreen> {
             const SizedBox(height: 24),
 
             // FAQ Cards
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 1,
-              childAspectRatio: 2.5,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: _faqCards.map((card) => _buildFAQCard(card)).toList(),
-            ),
+            ..._faqCards.map((card) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildFAQCard(card),
+            )),
           ],
         ),
       ),
@@ -150,7 +141,7 @@ class _FAQScreenState extends State<FAQScreen> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, 1),
@@ -171,16 +162,12 @@ class _FAQScreenState extends State<FAQScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Expanded(
-              child: Text(
-                card.answer,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                  height: 1.4,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 4,
+            Text(
+              card.answer,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+                height: 1.4,
               ),
             ),
           ],
