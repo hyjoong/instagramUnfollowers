@@ -1,9 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io';
 import 'firebase_service.dart';
 import 'webview_service.dart';
 import 'file_handler.dart';
@@ -12,6 +12,9 @@ import 'screens/loading_screen.dart';
 import 'screens/error_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/analysis_history_screen.dart';
+import 'ads/admob_banner.dart';
+import 'ads/admob_config.dart';
+import 'ads/ad_consent_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +23,7 @@ void main() async {
   try {
     await FirebaseService.initializeFirebase();
   } catch (e) {
-    print('Firebase initialization failed, but app will continue: $e');
+    debugPrint('Firebase initialization failed, but app will continue: $e');
   }
 
   runApp(const MyApp());
@@ -50,6 +53,8 @@ class TrackFollowsPage extends StatefulWidget {
 }
 
 class _TrackFollowsPageState extends State<TrackFollowsPage> {
+  final _adConfig = AdMobConfig.current;
+  final _adConsent = AdConsentController();
   WebViewService? _webViewService;
   FirebaseService? _firebaseService;
   FileHandler? _fileHandler;
@@ -71,6 +76,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     final prefs = await SharedPreferences.getInstance();
     final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
 
+    if (!mounted) return;
     setState(() {
       _showOnboarding = !onboardingCompleted;
     });
@@ -87,30 +93,30 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
       _webViewService = WebViewService();
 
       await _firebaseService!.initializeMessaging();
-      await _requestPermissions();
-      _webViewService!.initializeWebView(
+      await _webViewService!.initializeWebView(
         onFilePickRequested: _handleFileSelection,
         onResetComplete: _onResetComplete,
         onAnalysisComplete: _onAnalysisComplete,
       );
 
+      if (!mounted) return;
       setState(() {
         _isInitialized = true;
         _isLoading = false;
       });
+      if (_adConfig.enabled && !_adConfig.isTest) {
+        // Present UMP only after onboarding and the app's first visible frame.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_adConsent.initialize());
+        });
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _hasError = true;
         _errorMessage = 'Failed to initialize app: $e';
         _isLoading = false;
       });
-    }
-  }
-
-  Future<void> _requestPermissions() async {
-    if (Platform.isAndroid) {
-      await Permission.storage.request();
-      await Permission.mediaLibrary.request();
     }
   }
 
@@ -125,8 +131,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
             _fileHandler!.getFileType(result.files.first.extension);
 
         if (fileData != null && fileName != null) {
-          await _webViewService!
-              .setFileInWebView(fileName, fileData, fileType);
+          await _webViewService!.setFileInWebView(fileName, fileData, fileType);
         }
       }
     } catch (e) {
@@ -195,6 +200,12 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   }
 
   @override
+  void dispose() {
+    _adConsent.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // 온보딩 화면
     if (_showOnboarding) {
@@ -246,15 +257,31 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
                 elevation: 0,
                 toolbarHeight: 0,
               ),
-              body: WebViewWidget(
-                controller: _webViewService!.controller!,
-              ),
+              body: Column(children: [
+                Expanded(
+                  child: WebViewWidget(
+                    controller: _webViewService!.controller!,
+                  ),
+                ),
+                if (_adConfig.enabled && _currentIndex == 0)
+                  AnimatedBuilder(
+                    animation: _adConsent,
+                    builder: (context, child) => AdMobBanner(
+                      config: _adConfig,
+                      canRequestAds:
+                          _adConfig.isTest || _adConsent.canRequestAds,
+                    ),
+                  ),
+              ]),
             ),
           ),
           // 히스토리 화면
           AnalysisHistoryScreen(key: ValueKey('history_$_currentIndex')),
           // 설정 화면
-          const SettingsScreen(),
+          SettingsScreen(
+            adConsent:
+                _adConfig.enabled && !_adConfig.isTest ? _adConsent : null,
+          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

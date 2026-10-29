@@ -8,6 +8,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+import 'ads/admob_config.dart';
 
 class WebViewService {
   WebViewController? controller;
@@ -18,7 +19,7 @@ class WebViewService {
   Function()? onResetComplete;
   Function()? onAnalysisComplete;
 
-  void initializeWebView({
+  Future<void> initializeWebView({
     Function()? onFilePickRequested,
     Function()? onResetComplete,
     Function()? onAnalysisComplete,
@@ -49,6 +50,17 @@ class WebViewService {
                 window.flutterApp = true;
                 console.log('Flutter WebView re-initialized');
               }
+              window.sendToFlutter = function(data) {
+                if (window.Flutter) {
+                  window.Flutter.postMessage(JSON.stringify(data));
+                }
+              };
+              window.notifyFlutterAnalysisComplete = function(analysisData) {
+                window.sendToFlutter({
+                  type: 'detailed_analysis_complete',
+                  data: analysisData
+                });
+              };
             ''');
           },
           onNavigationRequest: (NavigationRequest request) {
@@ -94,8 +106,23 @@ class WebViewService {
           print('Reset complete');
           onResetComplete?.call();
         },
-      )
-      ..loadRequest(Uri.parse('https://trackfollows.com'));
+      );
+
+    // Web ad components can suppress placements before the SDK renders them.
+    // Keep web placements hidden even if native consent is denied or no ad
+    // fills. Falling back to AdFit would bypass the native consent decision.
+    if (AdMobConfig.current.enabled) {
+      final userAgent = await controller!.getUserAgent() ?? '';
+      await controller!.setUserAgent(
+        '$userAgent ${AdMobConfig.nativeAdsUserAgent}'.trim(),
+      );
+    }
+
+    const webUrl = String.fromEnvironment(
+      'TRACKFOLLOWS_URL',
+      defaultValue: 'https://trackfollows.com',
+    );
+    await controller!.loadRequest(Uri.parse(webUrl));
 
     // Android에서 <input type="file"> 지원
     if (Platform.isAndroid) {
@@ -113,31 +140,6 @@ class WebViewService {
         return [];
       });
     }
-
-    // Flutter 웹뷰 식별자 설정
-    await controller?.runJavaScript('''
-      // Flutter 웹뷰 식별자 설정
-      window.isFlutterWebView = true;
-      window.flutterApp = true;
-      
-      // Flutter 메시지 전송 함수
-      window.sendToFlutter = function(data) {
-        if (window.Flutter) {
-          window.Flutter.postMessage(JSON.stringify(data));
-        }
-      };
-      
-      // 분석 완료 시 Flutter로 전송하는 함수
-      window.notifyFlutterAnalysisComplete = function(analysisData) {
-        const message = {
-          type: 'detailed_analysis_complete',
-          data: analysisData
-        };
-        window.sendToFlutter(message);
-      };
-      
-      console.log('Flutter WebView initialized');
-    ''');
 
     // iOS에서 미디어 재생 설정
     if (Platform.isIOS) {
