@@ -87,10 +87,17 @@ void main() {
     expect(backend.loads, 0);
   });
 
-  test('release builds skip interstitials until production ids exist', () {
+  test('release uses publisher interstitial ids, debug test mode uses samples',
+      () {
+    expect(
+        const AdMobConfig(release: true, platform: TargetPlatform.android)
+            .interstitialAdUnitId,
+        'ca-app-pub-2951563150255051/5705291157');
+    expect(
+        const AdMobConfig(release: true, platform: TargetPlatform.iOS)
+            .interstitialAdUnitId,
+        'ca-app-pub-2951563150255051/8563835896');
     for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
-      final release = AdMobConfig(release: true, platform: platform);
-      expect(release.interstitialAdUnitId, isNull);
       final debugTest =
           AdMobConfig(release: false, platform: platform, testMode: true);
       expect(debugTest.interstitialAdUnitId, startsWith('ca-app-pub-3940'));

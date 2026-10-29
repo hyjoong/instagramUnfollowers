@@ -17,10 +17,12 @@ class AdMobConfig {
   static const androidTestBannerId = 'ca-app-pub-3940256099942544/9214589741';
   static const iosTestBannerId = 'ca-app-pub-3940256099942544/2435281174';
 
-  // Interstitial units are created image/text only in the AdMob console.
-  // Empty means the unit does not exist yet, so release builds skip it.
-  static const androidProductionInterstitialId = '';
-  static const iosProductionInterstitialId = '';
+  // Interstitial units allow text/image only (video off) in the AdMob console.
+  // An empty id makes release builds skip interstitials.
+  static const androidProductionInterstitialId =
+      'ca-app-pub-2951563150255051/5705291157';
+  static const iosProductionInterstitialId =
+      'ca-app-pub-2951563150255051/8563835896';
   static const androidTestInterstitialId =
       'ca-app-pub-3940256099942544/1033173712';
   static const iosTestInterstitialId = 'ca-app-pub-3940256099942544/4411468910';
