@@ -17,6 +17,14 @@ class AdMobConfig {
   static const androidTestBannerId = 'ca-app-pub-3940256099942544/9214589741';
   static const iosTestBannerId = 'ca-app-pub-3940256099942544/2435281174';
 
+  // Interstitial units are created image/text only in the AdMob console.
+  // Empty means the unit does not exist yet, so release builds skip it.
+  static const androidProductionInterstitialId = '';
+  static const iosProductionInterstitialId = '';
+  static const androidTestInterstitialId =
+      'ca-app-pub-3940256099942544/1033173712';
+  static const iosTestInterstitialId = 'ca-app-pub-3940256099942544/4411468910';
+
   static final AdMobConfig current = AdMobConfig(
     release: kReleaseMode,
     platform: defaultTargetPlatform,
@@ -45,5 +53,13 @@ class AdMobConfig {
       return isTest ? androidTestBannerId : androidProductionBannerId;
     }
     return isTest ? iosTestBannerId : iosProductionBannerId;
+  }
+
+  String? get interstitialAdUnitId {
+    if (!enabled) return null;
+    final id = platform == TargetPlatform.android
+        ? (isTest ? androidTestInterstitialId : androidProductionInterstitialId)
+        : (isTest ? iosTestInterstitialId : iosProductionInterstitialId);
+    return id.isEmpty ? null : id;
   }
 }
