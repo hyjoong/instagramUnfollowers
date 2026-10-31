@@ -14,6 +14,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/analysis_history_screen.dart';
 import 'ads/admob_banner.dart';
 import 'ads/admob_config.dart';
+import 'ads/admob_interstitial.dart';
 import 'ads/ad_consent_controller.dart';
 
 void main() async {
@@ -55,6 +56,9 @@ class TrackFollowsPage extends StatefulWidget {
 class _TrackFollowsPageState extends State<TrackFollowsPage> {
   final _adConfig = AdMobConfig.current;
   final _adConsent = AdConsentController();
+  late final _interstitial = AdMobInterstitialController(
+    adUnitId: _adConfig.interstitialAdUnitId,
+  );
   WebViewService? _webViewService;
   FirebaseService? _firebaseService;
   FileHandler? _fileHandler;
@@ -69,7 +73,13 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   @override
   void initState() {
     super.initState();
+    _adConsent.addListener(_syncInterstitialConsent);
     _checkOnboardingStatus();
+  }
+
+  void _syncInterstitialConsent() {
+    _interstitial
+        .updateConsent(_adConfig.isTest || _adConsent.canRequestAds);
   }
 
   Future<void> _checkOnboardingStatus() async {
@@ -104,6 +114,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         _isInitialized = true;
         _isLoading = false;
       });
+      if (_adConfig.isTest) _syncInterstitialConsent();
       if (_adConfig.enabled && !_adConfig.isTest) {
         // Present UMP only after onboarding and the app's first visible frame.
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -151,6 +162,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   }
 
   void _onAnalysisComplete() {
+    // 분석 탭에서 결과를 받았을 때만 전면 광고 후보 (첫 분석·하루 2회 이상 제외)
+    if (_currentIndex == 0) unawaited(_interstitial.onAnalysisCompleted());
     // 분석 완료 시 히스토리 화면 갱신
     if (_currentIndex == 1) {
       setState(() {
@@ -201,6 +214,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
 
   @override
   void dispose() {
+    _adConsent.removeListener(_syncInterstitialConsent);
+    _interstitial.dispose();
     _adConsent.dispose();
     super.dispose();
   }
