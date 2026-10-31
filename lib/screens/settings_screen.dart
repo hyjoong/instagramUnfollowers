@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../ads/ad_consent_controller.dart';
 import 'faq_screen.dart';
 import 'terms_screen.dart';
 import 'privacy_screen.dart';
-import 'analysis_history_screen.dart';
-import 'theme_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.adConsent});
+
+  final AdConsentController? adConsent;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -25,10 +26,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadAppInfo() async {
     final packageInfo = await PackageInfo.fromPlatform();
+    if (!mounted) return;
     setState(() {
       _appVersion = packageInfo.version;
       _buildNumber = packageInfo.buildNumber;
     });
+  }
+
+  Future<void> _showAdPrivacyOptions() async {
+    final error = await widget.adConsent?.showPrivacyOptions();
+    if (!mounted || error == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
   }
 
   @override
@@ -80,18 +88,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 MaterialPageRoute(builder: (context) => const PrivacyScreen()),
               ),
             ),
-            const SizedBox(height: 24),
-            _buildSectionTitle('분석 히스토리'),
-            const SizedBox(height: 12),
-            _buildButton(
-              '분석 히스토리 보기',
-              Icons.history,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const AnalysisHistoryScreen()),
+            if (widget.adConsent != null)
+              AnimatedBuilder(
+                animation: widget.adConsent!,
+                builder: (context, child) {
+                  final consent = widget.adConsent!;
+                  if (!consent.privacyOptionsRequired) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(children: [
+                    const SizedBox(height: 8),
+                    _buildButton(
+                      '광고 개인정보 설정',
+                      Icons.tune,
+                      consent.isBusy ? null : _showAdPrivacyOptions,
+                    ),
+                  ]);
+                },
               ),
-            ),
             const SizedBox(height: 24),
             _buildSectionTitle('앱 정보'),
             const SizedBox(height: 12),
@@ -113,13 +127,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildButton(String label, IconData icon, VoidCallback onTap) {
+  Widget _buildButton(String label, IconData icon, VoidCallback? onTap) {
     return ListTile(
+      enabled: onTap != null,
       leading: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: const Color(0xFFEC4899).withOpacity(0.1),
+          color: const Color(0xFFEC4899).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -153,7 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -173,7 +188,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'TrackFollows는 개인정보 보호에 중점을 둔 인스타그램 분석 도구입니다. 모든 처리는 브라우저에서 로컬로 이루어지며, 개인정보를 수집하거나 저장하지 않습니다.',
+            'TrackFollows는 인스타그램 데이터를 기기에서 분석하는 도구입니다. 광고 서비스의 정보 처리에 관한 내용은 개인정보 처리방침에서 확인할 수 있습니다.',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey,
@@ -182,8 +197,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
+          if (_appVersion.isNotEmpty)
+            Text(
+              '버전 $_appVersion ($_buildNumber)',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          const SizedBox(height: 4),
           const Text(
-            '© 2025 TrackFollows. 모든 권리 보유.',
+            '© 2025-2026 TrackFollows. 모든 권리 보유.',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey,

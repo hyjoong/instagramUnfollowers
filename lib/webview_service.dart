@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
-import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:file_picker/file_picker.dart';
 import 'file_handler.dart';
-import 'javascript_injector.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+import 'ads/admob_config.dart';
 
 class WebViewService {
   WebViewController? controller;
@@ -18,7 +19,7 @@ class WebViewService {
   Function()? onResetComplete;
   Function()? onAnalysisComplete;
 
-  void initializeWebView({
+  Future<void> initializeWebView({
     Function()? onFilePickRequested,
     Function()? onResetComplete,
     Function()? onAnalysisComplete,
@@ -49,7 +50,29 @@ class WebViewService {
                 window.flutterApp = true;
                 console.log('Flutter WebView re-initialized');
               }
+              window.sendToFlutter = function(data) {
+                if (window.Flutter) {
+                  window.Flutter.postMessage(JSON.stringify(data));
+                }
+              };
+              window.notifyFlutterAnalysisComplete = function(analysisData) {
+                window.sendToFlutter({
+                  type: 'detailed_analysis_complete',
+                  data: analysisData
+                });
+              };
             ''');
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            // Android에서만 인스타그램 링크를 Chrome Custom Tab으로 열기
+            if (Platform.isAndroid &&
+                request.url.contains('instagram.com/') &&
+                !request.url.contains('trackfollows.com')) {
+              launchUrl(Uri.parse(request.url),
+                  mode: LaunchMode.inAppBrowserView);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
           },
           onWebResourceError: (WebResourceError error) {
             print('WebView error: ${error.description}');
@@ -83,33 +106,40 @@ class WebViewService {
           print('Reset complete');
           onResetComplete?.call();
         },
-      )
-      ..loadRequest(Uri.parse('https://trackfollows.com'));
+      );
 
-    // Flutter 웹뷰 식별자 설정
-    await controller?.runJavaScript('''
-      // Flutter 웹뷰 식별자 설정
-      window.isFlutterWebView = true;
-      window.flutterApp = true;
-      
-      // Flutter 메시지 전송 함수
-      window.sendToFlutter = function(data) {
-        if (window.Flutter) {
-          window.Flutter.postMessage(JSON.stringify(data));
+    // Web ad components can suppress placements before the SDK renders them.
+    // Keep web placements hidden even if native consent is denied or no ad
+    // fills. Falling back to AdFit would bypass the native consent decision.
+    if (AdMobConfig.current.enabled) {
+      final userAgent = await controller!.getUserAgent() ?? '';
+      await controller!.setUserAgent(
+        '$userAgent ${AdMobConfig.nativeAdsUserAgent}'.trim(),
+      );
+    }
+
+    const webUrl = String.fromEnvironment(
+      'TRACKFOLLOWS_URL',
+      defaultValue: 'https://trackfollows.com',
+    );
+    await controller!.loadRequest(Uri.parse(webUrl));
+
+    // Android에서 <input type="file"> 지원
+    if (Platform.isAndroid) {
+      final androidController =
+          controller!.platform as AndroidWebViewController;
+      androidController
+          .setOnShowFileSelector((FileSelectorParams params) async {
+        final result = await FilePicker.platform.pickFiles();
+        if (result != null && result.files.isNotEmpty) {
+          final path = result.files.first.path;
+          if (path != null) {
+            return [Uri.file(path).toString()];
+          }
         }
-      };
-      
-      // 분석 완료 시 Flutter로 전송하는 함수
-      window.notifyFlutterAnalysisComplete = function(analysisData) {
-        const message = {
-          type: 'detailed_analysis_complete',
-          data: analysisData
-        };
-        window.sendToFlutter(message);
-      };
-      
-      console.log('Flutter WebView initialized');
-    ''');
+        return [];
+      });
+    }
 
     // iOS에서 미디어 재생 설정
     if (Platform.isIOS) {

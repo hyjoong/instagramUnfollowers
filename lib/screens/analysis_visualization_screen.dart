@@ -39,9 +39,13 @@ class _AnalysisVisualizationScreenState
             _analysisData = data;
             _isLoading = false;
           });
-          break;
+          return;
         }
       }
+
+      setState(() {
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -72,7 +76,7 @@ class _AnalysisVisualizationScreenState
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _analysisData == null
-              ? const Center(child: Text('분석 데이터를 찾을 수 없습니다'))
+              ? _buildNotFoundState()
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -91,6 +95,60 @@ class _AnalysisVisualizationScreenState
     );
   }
 
+  Widget _buildNotFoundState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(40),
+            ),
+            child: const Icon(
+              Icons.search_off,
+              size: 40,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            '분석 데이터를 찾을 수 없습니다',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '삭제되었거나 존재하지 않는 데이터입니다',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('돌아가기'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEC4899),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSummaryCard() {
     return Container(
       width: double.infinity,
@@ -100,7 +158,7 @@ class _AnalysisVisualizationScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -153,19 +211,25 @@ class _AnalysisVisualizationScreenState
     return Column(
       children: [
         Container(
-          width: 50,
-          height: 50,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(25),
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(28),
           ),
           child: Center(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: color,
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
               ),
             ),
           ),
@@ -198,7 +262,7 @@ class _AnalysisVisualizationScreenState
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               spreadRadius: 1,
               blurRadius: 10,
               offset: const Offset(0, 2),
@@ -217,6 +281,47 @@ class _AnalysisVisualizationScreenState
       );
     }
 
+    final sections = <PieChartSectionData>[];
+    if (unfollowers > 0) {
+      sections.add(PieChartSectionData(
+        value: unfollowers.toDouble(),
+        title: '${((unfollowers / total) * 100).toStringAsFixed(1)}%',
+        color: Colors.red,
+        radius: 80,
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ));
+    }
+    if (fans > 0) {
+      sections.add(PieChartSectionData(
+        value: fans.toDouble(),
+        title: '${((fans / total) * 100).toStringAsFixed(1)}%',
+        color: Colors.green,
+        radius: 80,
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ));
+    }
+    if (mutual > 0) {
+      sections.add(PieChartSectionData(
+        value: mutual.toDouble(),
+        title: '${((mutual / total) * 100).toStringAsFixed(1)}%',
+        color: Colors.blue,
+        radius: 80,
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ));
+    }
+
     return Container(
       width: double.infinity,
       height: 350,
@@ -226,7 +331,7 @@ class _AnalysisVisualizationScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -249,42 +354,7 @@ class _AnalysisVisualizationScreenState
             height: 200,
             child: PieChart(
               PieChartData(
-                sections: [
-                  PieChartSectionData(
-                    value: unfollowers.toDouble(),
-                    title:
-                        '${((unfollowers / total) * 100).toStringAsFixed(1)}%',
-                    color: Colors.red,
-                    radius: 80,
-                    titleStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  PieChartSectionData(
-                    value: fans.toDouble(),
-                    title: '${((fans / total) * 100).toStringAsFixed(1)}%',
-                    color: Colors.green,
-                    radius: 80,
-                    titleStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  PieChartSectionData(
-                    value: mutual.toDouble(),
-                    title: '${((mutual / total) * 100).toStringAsFixed(1)}%',
-                    color: Colors.blue,
-                    radius: 80,
-                    titleStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+                sections: sections,
                 centerSpaceRadius: 40,
                 sectionsSpace: 2,
               ),
@@ -337,9 +407,10 @@ class _AnalysisVisualizationScreenState
     final totalFollowers = _analysisData!['totalFollowers'] ?? 0;
     final totalFollowing = _analysisData!['totalFollowing'] ?? 0;
 
-    final maxValue = [unfollowers, fans, mutual, totalFollowers, totalFollowing]
+    final rawMax = [unfollowers, fans, mutual, totalFollowers, totalFollowing]
         .reduce((a, b) => a > b ? a : b)
         .toDouble();
+    final maxValue = rawMax > 0 ? rawMax : 1.0;
 
     return Container(
       width: double.infinity,
@@ -350,7 +421,7 @@ class _AnalysisVisualizationScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -424,19 +495,20 @@ class _AnalysisVisualizationScreenState
                         toY: unfollowers.toDouble(), color: Colors.red)
                   ]),
                   BarChartGroupData(x: 1, barRods: [
-                    BarChartRodData(toY: fans.toDouble(), color: Colors.orange)
+                    BarChartRodData(
+                        toY: fans.toDouble(), color: Colors.green)
                   ]),
                   BarChartGroupData(x: 2, barRods: [
                     BarChartRodData(
-                        toY: mutual.toDouble(), color: Colors.purple)
+                        toY: mutual.toDouble(), color: Colors.blue)
                   ]),
                   BarChartGroupData(x: 3, barRods: [
                     BarChartRodData(
-                        toY: totalFollowers.toDouble(), color: Colors.blue)
+                        toY: totalFollowers.toDouble(), color: Colors.indigo)
                   ]),
                   BarChartGroupData(x: 4, barRods: [
                     BarChartRodData(
-                        toY: totalFollowing.toDouble(), color: Colors.green)
+                        toY: totalFollowing.toDouble(), color: Colors.teal)
                   ]),
                 ],
               ),
@@ -456,7 +528,7 @@ class _AnalysisVisualizationScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -522,7 +594,7 @@ class _AnalysisVisualizationScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFEC4899).withOpacity(0.1),
+        color: const Color(0xFFEC4899).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

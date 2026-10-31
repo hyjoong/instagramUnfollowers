@@ -26,7 +26,16 @@ class FileHandler {
   }
 
   String getFileType(String? extension) {
-    return extension == 'zip' ? 'application/zip' : 'application/octet-stream';
+    switch (extension) {
+      case 'zip':
+        return 'application/zip';
+      case 'json':
+        return 'application/json';
+      case 'html':
+        return 'text/html';
+      default:
+        return 'application/octet-stream';
+    }
   }
 
   String? getFileName(FilePickerResult result) {

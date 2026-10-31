@@ -1,9 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io';
 import 'firebase_service.dart';
 import 'webview_service.dart';
 import 'file_handler.dart';
@@ -12,6 +12,10 @@ import 'screens/loading_screen.dart';
 import 'screens/error_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/analysis_history_screen.dart';
+import 'ads/admob_banner.dart';
+import 'ads/admob_config.dart';
+import 'ads/admob_interstitial.dart';
+import 'ads/ad_consent_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +24,7 @@ void main() async {
   try {
     await FirebaseService.initializeFirebase();
   } catch (e) {
-    print('Firebase initialization failed, but app will continue: $e');
+    debugPrint('Firebase initialization failed, but app will continue: $e');
   }
 
   runApp(const MyApp());
@@ -50,6 +54,11 @@ class TrackFollowsPage extends StatefulWidget {
 }
 
 class _TrackFollowsPageState extends State<TrackFollowsPage> {
+  final _adConfig = AdMobConfig.current;
+  final _adConsent = AdConsentController();
+  late final _interstitial = AdMobInterstitialController(
+    adUnitId: _adConfig.interstitialAdUnitId,
+  );
   WebViewService? _webViewService;
   FirebaseService? _firebaseService;
   FileHandler? _fileHandler;
@@ -64,13 +73,20 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   @override
   void initState() {
     super.initState();
+    _adConsent.addListener(_syncInterstitialConsent);
     _checkOnboardingStatus();
+  }
+
+  void _syncInterstitialConsent() {
+    _interstitial
+        .updateConsent(_adConfig.isTest || _adConsent.canRequestAds);
   }
 
   Future<void> _checkOnboardingStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
 
+    if (!mounted) return;
     setState(() {
       _showOnboarding = !onboardingCompleted;
     });
@@ -87,30 +103,31 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
       _webViewService = WebViewService();
 
       await _firebaseService!.initializeMessaging();
-      await _requestPermissions();
-      _webViewService!.initializeWebView(
+      await _webViewService!.initializeWebView(
         onFilePickRequested: _handleFileSelection,
         onResetComplete: _onResetComplete,
         onAnalysisComplete: _onAnalysisComplete,
       );
 
+      if (!mounted) return;
       setState(() {
         _isInitialized = true;
         _isLoading = false;
       });
+      if (_adConfig.isTest) _syncInterstitialConsent();
+      if (_adConfig.enabled && !_adConfig.isTest) {
+        // Present UMP only after onboarding and the app's first visible frame.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_adConsent.initialize());
+        });
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _hasError = true;
         _errorMessage = 'Failed to initialize app: $e';
         _isLoading = false;
       });
-    }
-  }
-
-  Future<void> _requestPermissions() async {
-    if (Platform.isAndroid) {
-      await Permission.storage.request();
-      await Permission.mediaLibrary.request();
     }
   }
 
@@ -125,13 +142,18 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
             _fileHandler!.getFileType(result.files.first.extension);
 
         if (fileData != null && fileName != null) {
-          // 웹뷰에 파일 설정
-          bool success = await _webViewService!
-              .setFileInWebView(fileName, fileData, fileType);
+          await _webViewService!.setFileInWebView(fileName, fileData, fileType);
         }
       }
     } catch (e) {
-      // 파일 선택 에러 처리
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('파일 선택에 실패했습니다'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -140,6 +162,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   }
 
   void _onAnalysisComplete() {
+    // 분석 탭에서 결과를 받았을 때만 전면 광고 후보 (첫 분석·하루 2회 이상 제외)
+    if (_currentIndex == 0) unawaited(_interstitial.onAnalysisCompleted());
     // 분석 완료 시 히스토리 화면 갱신
     if (_currentIndex == 1) {
       setState(() {
@@ -189,6 +213,14 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   }
 
   @override
+  void dispose() {
+    _adConsent.removeListener(_syncInterstitialConsent);
+    _interstitial.dispose();
+    _adConsent.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // 온보딩 화면
     if (_showOnboarding) {
@@ -220,7 +252,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
           // 메인 웹뷰 화면
           PopScope(
             canPop: false,
-            onPopInvoked: (didPop) async {
+            onPopInvokedWithResult: (didPop, result) async {
               if (didPop) return;
               // 웹뷰에서 뒤로갈 수 있는지 확인
               final canGoBack = await _webViewService!.canGoBack();
@@ -240,15 +272,31 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
                 elevation: 0,
                 toolbarHeight: 0,
               ),
-              body: WebViewWidget(
-                controller: _webViewService!.controller!,
-              ),
+              body: Column(children: [
+                Expanded(
+                  child: WebViewWidget(
+                    controller: _webViewService!.controller!,
+                  ),
+                ),
+                if (_adConfig.enabled && _currentIndex == 0)
+                  AnimatedBuilder(
+                    animation: _adConsent,
+                    builder: (context, child) => AdMobBanner(
+                      config: _adConfig,
+                      canRequestAds:
+                          _adConfig.isTest || _adConsent.canRequestAds,
+                    ),
+                  ),
+              ]),
             ),
           ),
           // 히스토리 화면
           AnalysisHistoryScreen(key: ValueKey('history_$_currentIndex')),
           // 설정 화면
-          const SettingsScreen(),
+          SettingsScreen(
+            adConsent:
+                _adConfig.enabled && !_adConfig.isTest ? _adConsent : null,
+          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

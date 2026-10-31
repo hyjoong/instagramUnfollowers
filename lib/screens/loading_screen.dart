@@ -20,7 +20,7 @@ class LoadingScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFEC4899).withOpacity(0.3),
+                    color: const Color(0xFFEC4899).withValues(alpha: 0.3),
                     spreadRadius: 5,
                     blurRadius: 15,
                     offset: const Offset(0, 5),
