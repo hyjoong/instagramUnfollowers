@@ -27,7 +27,7 @@ class TermsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              '최종 업데이트: 2025년 3월 22일',
+              '최종 업데이트: 2026년 11월 1일',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey,
@@ -68,7 +68,7 @@ class TermsScreen extends StatelessWidget {
             ),
             _buildSection(
               '9. 문의하기',
-              '이 약관에 대해 질문이 있으시면 trackfollows@google.com으로 문의해 주세요.',
+              '이 약관에 대해 질문이 있으시면 hyjoong12@gmail.com으로 문의해 주세요.',
             ),
             const SizedBox(height: 40),
             Container(
