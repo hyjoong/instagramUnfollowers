@@ -357,6 +357,8 @@ class WebViewService {
         'unfollowers': data['unfollowers'] ?? [],
         'fans': data['fans'] ?? [],
         'mutualFollows': data['mutualFollows'] ?? [],
+        // 웹이 파일 이름에서 읽은 내보낸 날(YYYY-MM-DD). 히스토리 비교 순서에 씁니다.
+        if (data['exportDate'] is String) 'exportDate': data['exportDate'],
       };
 
       // 새 분석을 맨 앞에 추가

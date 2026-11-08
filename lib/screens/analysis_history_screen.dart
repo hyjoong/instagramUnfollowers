@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'analysis_visualization_screen.dart';
+import 'history_compare_screen.dart';
+import '../history/history_compare.dart';
 import 'package:share_plus/share_plus.dart';
 
 class AnalysisHistoryScreen extends StatefulWidget {
@@ -15,8 +17,16 @@ class AnalysisHistoryScreen extends StatefulWidget {
 class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
     with AutomaticKeepAliveClientMixin {
   List<AnalysisResult> _history = [];
+  // 내보낸 날 최근 순으로 정렬한 비교용 기록. _history와 같은 순서입니다.
+  List<HistorySnapshot> _snapshots = [];
+  // 각 기록과 그 직전(같은 계정) 기록의 비교 결과. 직전 기록이 없으면 null
+  List<HistoryDiff?> _previousDiffs = [];
+  String _loadedSignature = '';
   bool _isLoading = true;
   Timer? _refreshTimer;
+  // 두 기록 비교 모드에서 고른 기록 id
+  final List<String> _selectedIds = [];
+  bool _selecting = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -51,19 +61,79 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       final historyJson = prefs.getStringList('analysis_history') ?? [];
+      // 5초마다 다시 읽으므로, 내용이 그대로면 비교를 다시 계산하지 않습니다.
+      final signature = '${historyJson.length}:${historyJson.isEmpty ? '' : historyJson.first.hashCode}';
+      if (signature == _loadedSignature && !_isLoading) return;
 
+      final decoded = historyJson
+          .map((json) => Map<String, dynamic>.from(jsonDecode(json)))
+          .toList();
+      final pairs = [
+        for (final json in decoded)
+          (AnalysisResult.fromJson(json), HistorySnapshot.fromJson(json))
+      ];
+      pairs.sort((a, b) => a.$2.isEarlierThan(b.$2) ? 1 : -1);
+
+      final snapshots = [for (final p in pairs) p.$2];
+      final diffs = <HistoryDiff?>[];
+      for (var i = 0; i < snapshots.length; i++) {
+        HistoryDiff? diff;
+        for (var j = i + 1; j < snapshots.length; j++) {
+          if (looksLikeSameAccount(snapshots[i], snapshots[j])) {
+            diff = compareSnapshots(snapshots[j], snapshots[i]);
+            break;
+          }
+        }
+        diffs.add(diff);
+      }
+
+      if (!mounted) return;
       setState(() {
-        _history = historyJson
-            .map((json) => AnalysisResult.fromJson(jsonDecode(json)))
-            .toList();
+        _history = [for (final p in pairs) p.$1];
+        _snapshots = snapshots;
+        _previousDiffs = diffs;
+        _loadedSignature = signature;
+        _selectedIds.removeWhere((id) => !_history.any((r) => r.id == id));
         _isLoading = false;
       });
 
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
     }
+  }
+
+  void _openCompare(HistoryDiff diff) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => HistoryCompareScreen(diff: diff)),
+    );
+  }
+
+  void _toggleSelect(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        if (_selectedIds.length == 2) _selectedIds.removeAt(0);
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _compareSelected() {
+    final picked = [
+      for (final id in _selectedIds) _snapshots.firstWhere((s) => s.id == id)
+    ];
+    if (picked.length != 2) return;
+    if (!looksLikeSameAccount(picked[0], picked[1])) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('두 기록의 팔로워가 거의 겹치지 않아요. 같은 계정의 기록인지 확인해 주세요.')),
+      );
+      return;
+    }
+    _openCompare(compareSnapshots(picked[0], picked[1]));
   }
 
   Future<void> _deleteHistoryItem(int index) async {
@@ -92,13 +162,14 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      _history.removeAt(index);
-
-      final historyJson =
-          _history.map((result) => jsonEncode(result.toJson())).toList();
+      final targetId = _history[index].id;
+      final historyJson = (prefs.getStringList('analysis_history') ?? [])
+          .where((json) => '${jsonDecode(json)['id']}' != targetId)
+          .toList();
 
       await prefs.setStringList('analysis_history', historyJson);
-      setState(() {});
+      _loadedSignature = '';
+      await _loadHistory();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -164,12 +235,40 @@ TrackFollows 앱으로 생성됨
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          if (_history.length >= 2)
+            TextButton(
+              onPressed: () => setState(() {
+                _selecting = !_selecting;
+                _selectedIds.clear();
+              }),
+              child: Text(_selecting ? '취소' : '두 기록 비교',
+                  style: const TextStyle(color: Color(0xFFEC4899))),
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _history.isEmpty
               ? _buildEmptyState()
               : _buildHistoryList(),
+      bottomNavigationBar: _selecting
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFEC4899),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: _selectedIds.length == 2 ? _compareSelected : null,
+                  child: Text(_selectedIds.length == 2
+                      ? '고른 두 기록 비교하기'
+                      : '비교할 기록 두 개를 골라 주세요 (${_selectedIds.length}/2)'),
+                ),
+              ),
+            )
+          : null,
     );
   }
 
@@ -224,7 +323,6 @@ TrackFollows 앱으로 생성됨
               padding: const EdgeInsets.all(16),
               itemCount: _history.length,
               itemBuilder: (context, index) {
-                final result = _history[index];
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
@@ -239,58 +337,7 @@ TrackFollows 앱으로 생성됨
                       ),
                     ],
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              AnalysisVisualizationScreen(
-                            analysisId: result.id,
-                          ),
-                        ),
-                      );
-                    },
-                    title: Text(
-                      '분석 ${_history.length - index}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        _buildStatRow('언팔로워', result.unfollowersCount),
-                        _buildStatRow('팬', result.fansCount),
-                        _buildStatRow('맞팔', result.mutualCount),
-                        const SizedBox(height: 8),
-                        Text(
-                          '날짜: ${_formatDate(result.date)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.share, color: Colors.blue),
-                          onPressed: () => _shareAnalysis(result),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              color: Colors.red),
-                          onPressed: () => _deleteHistoryItem(index),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _buildHistoryCard(index),
                 );
               },
             ),
@@ -300,30 +347,138 @@ TrackFollows 앱으로 생성됨
     );
   }
 
-  Widget _buildStatRow(String label, int count) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+  Widget _buildHistoryCard(int index) {
+    final result = _history[index];
+    final snapshot = _snapshots[index];
+    final diff = _previousDiffs[index];
+    final selected = _selectedIds.contains(result.id);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        if (_selecting) {
+          _toggleSelect(result.id);
+        } else if (diff != null) {
+          _openCompare(diff);
+        } else {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => AnalysisVisualizationScreen(analysisId: result.id),
+          ));
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_selecting)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: selected ? const Color(0xFFEC4899) : Colors.grey,
+                ),
+              ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    snapshot.dateFromFileName
+                        ? '${formatSnapshotDate(snapshot)} 내보내기'
+                        : formatSnapshotDate(snapshot),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '팔로워 ${result.totalFollowers} · 팔로잉 ${result.totalFollowing} · 언팔로워 ${result.unfollowersCount}',
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildChangeChip(diff),
+                  const SizedBox(height: 6),
+                  Text(
+                    '분석: ${_formatDate(result.date)}',
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            if (!_selecting)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.grey),
+                onSelected: (value) {
+                  if (value == 'stats') {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) =>
+                          AnalysisVisualizationScreen(analysisId: result.id),
+                    ));
+                  } else if (value == 'share') {
+                    _shareAnalysis(result);
+                  } else if (value == 'delete') {
+                    _deleteHistoryItem(index);
+                  }
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'stats', child: Text('통계 보기')),
+                  PopupMenuItem(value: 'share', child: Text('공유')),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text('삭제', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 직전 기록과 비교한 변화. 눌러서 자세히 볼 수 있다는 걸 함께 보여 줍니다.
+  Widget _buildChangeChip(HistoryDiff? diff) {
+    if (diff == null) {
+      return const Text('첫 기록 · 다음 분석부터 변화를 비교해요',
+          style: TextStyle(fontSize: 12, color: Colors.grey));
+    }
+    final lost = diff.lostFollowers.length;
+    final gained = diff.newFollowers.length;
+    final noChange = lost == 0 && gained == 0 && diff.renamed.isEmpty;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDF2F8),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-          Text(
-            count.toString(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFFEC4899),
-            ),
-          ),
+          if (noChange)
+            const Text('직전 기록과 팔로워 변화 없음',
+                style: TextStyle(fontSize: 12, color: Colors.black54))
+          else ...[
+            const Text('직전 기록 대비  ',
+                style: TextStyle(fontSize: 12, color: Colors.black54)),
+            Text('언팔 $lost',
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red)),
+            const Text('  ·  ', style: TextStyle(fontSize: 12, color: Colors.black38)),
+            Text('새 팔로워 $gained',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade700)),
+          ],
+          const SizedBox(width: 4),
+          const Icon(Icons.chevron_right, size: 16, color: Colors.black38),
         ],
       ),
     );
   }
+
 }
 
 class AnalysisResult {
@@ -337,6 +492,7 @@ class AnalysisResult {
   final List<dynamic> unfollowers;
   final List<dynamic> fans;
   final List<dynamic> mutualFollows;
+  final String? exportDate;
 
   AnalysisResult({
     required this.id,
@@ -349,6 +505,7 @@ class AnalysisResult {
     required this.unfollowers,
     required this.fans,
     required this.mutualFollows,
+    this.exportDate,
   });
 
   Map<String, dynamic> toJson() {
@@ -363,6 +520,7 @@ class AnalysisResult {
       'unfollowers': unfollowers,
       'fans': fans,
       'mutualFollows': mutualFollows,
+      if (exportDate != null) 'exportDate': exportDate,
     };
   }
 
@@ -378,6 +536,7 @@ class AnalysisResult {
       unfollowers: json['unfollowers'] ?? [],
       fans: json['fans'] ?? [],
       mutualFollows: json['mutualFollows'] ?? [],
+      exportDate: json['exportDate'] as String?,
     );
   }
 
