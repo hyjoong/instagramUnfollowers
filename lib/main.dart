@@ -189,6 +189,9 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 8),
+        // 하단 배너 광고를 가리지 않도록 그 위에 띄운다.
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 96),
         content: const Text(
           '누가 나를 언팔했는지는 다음 분석 때 알 수 있어요. 2주 뒤에 알려 드릴까요?',
         ),
@@ -235,6 +238,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 96),
         content: Text(
           enabled
               ? '2주 뒤에 알려 드릴게요. 설정에서 끌 수 있어요.'
