@@ -6,9 +6,23 @@ import 'analysis_visualization_screen.dart';
 import 'history_compare_screen.dart';
 import '../history/history_compare.dart';
 import 'package:share_plus/share_plus.dart';
+import '../ads/ad_consent_controller.dart';
+import '../ads/admob_native_card.dart';
 
 class AnalysisHistoryScreen extends StatefulWidget {
-  const AnalysisHistoryScreen({super.key});
+  const AnalysisHistoryScreen({
+    super.key,
+    this.nativeAdUnitId,
+    this.adConsent,
+    this.adsAlwaysAllowed = false,
+  });
+
+  /// Null hides the ad card.
+  final String? nativeAdUnitId;
+  final AdConsentController? adConsent;
+
+  /// Test builds request sample ads without waiting for consent.
+  final bool adsAlwaysAllowed;
 
   @override
   State<AnalysisHistoryScreen> createState() => _AnalysisHistoryScreenState();
@@ -321,8 +335,14 @@ TrackFollows 앱으로 생성됨
             onRefresh: _loadHistory,
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _history.length,
-              itemBuilder: (context, index) {
+              itemCount: _history.length + (_showsAdCard ? 1 : 0),
+              itemBuilder: (context, listIndex) {
+                if (_showsAdCard && listIndex == _adCardIndex) {
+                  return _buildAdCard();
+                }
+                final index = _showsAdCard && listIndex > _adCardIndex
+                    ? listIndex - 1
+                    : listIndex;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
@@ -344,6 +364,31 @@ TrackFollows 앱으로 생성됨
           ),
         ),
       ],
+    );
+  }
+
+  /// 광고 카드는 가장 최근 기록 바로 아래에 한 장만 둔다.
+  static const _adCardIndex = 1;
+
+  bool get _showsAdCard =>
+      widget.nativeAdUnitId != null && _history.isNotEmpty && !_selecting;
+
+  Widget _buildAdCard() {
+    final consent = widget.adConsent;
+    if (consent == null) {
+      return AdMobNativeCard(
+        key: const ValueKey('history_native_ad'),
+        adUnitId: widget.nativeAdUnitId,
+        canRequestAds: widget.adsAlwaysAllowed,
+      );
+    }
+    return AnimatedBuilder(
+      animation: consent,
+      builder: (context, child) => AdMobNativeCard(
+        key: const ValueKey('history_native_ad'),
+        adUnitId: widget.nativeAdUnitId,
+        canRequestAds: widget.adsAlwaysAllowed || consent.canRequestAds,
+      ),
     );
   }
 

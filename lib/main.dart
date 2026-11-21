@@ -16,6 +16,7 @@ import 'ads/admob_banner.dart';
 import 'ads/admob_config.dart';
 import 'ads/admob_interstitial.dart';
 import 'ads/ad_consent_controller.dart';
+import 'reminders/recheck_reminder.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +60,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   late final _interstitial = AdMobInterstitialController(
     adUnitId: _adConfig.interstitialAdUnitId,
   );
+  final _reminder = RecheckReminderController();
   WebViewService? _webViewService;
   FirebaseService? _firebaseService;
   FileHandler? _fileHandler;
@@ -163,13 +165,83 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
 
   void _onAnalysisComplete() {
     // 분석 탭에서 결과를 받았을 때만 전면 광고 후보 (첫 분석·하루 2회 이상 제외)
-    if (_currentIndex == 0) unawaited(_interstitial.onAnalysisCompleted());
+    unawaited(_afterAnalysis(onAnalysisTab: _currentIndex == 0));
     // 분석 완료 시 히스토리 화면 갱신
     if (_currentIndex == 1) {
       setState(() {
         // 히스토리 화면을 다시 빌드하여 갱신
       });
     }
+  }
+
+  Future<void> _afterAnalysis({required bool onAnalysisTab}) async {
+    final adShown =
+        onAnalysisTab &&
+            await _interstitial.onAnalysisCompleted(
+              beforeShow: _showAdLeadIn,
+            );
+    await _reminder.onAnalysisCompleted();
+    // 광고가 뜬 분석에는 권유를 겹치지 않는다.
+    if (adShown || !onAnalysisTab || !mounted) return;
+    if (!await _reminder.shouldPrompt() || !mounted) return;
+    await _reminder.markPrompted();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 8),
+        content: const Text(
+          '누가 나를 언팔했는지는 다음 분석 때 알 수 있어요. 2주 뒤에 알려 드릴까요?',
+        ),
+        action: SnackBarAction(label: '알림 받기', onPressed: _enableReminder),
+      ),
+    );
+  }
+
+  /// 파일을 고르자마자 광고가 화면을 덮으면 잘못 누르기 쉬워서, 잠깐 알린 뒤 띄운다.
+  Future<void> _showAdLeadIn() async {
+    if (!mounted) return;
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const PopScope(
+        canPop: false,
+        child: Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 16),
+                  Text('분석 결과를 준비하고 있어요'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (mounted) Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  Future<void> _enableReminder() async {
+    final enabled = await _reminder.enable();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          enabled
+              ? '2주 뒤에 알려 드릴게요. 설정에서 끌 수 있어요.'
+              : '알림 권한이 꺼져 있어요. 기기 설정에서 알림을 허용해 주세요.',
+        ),
+      ),
+    );
   }
 
   void _onTabTapped(int index) {
@@ -291,9 +363,17 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
             ),
           ),
           // 히스토리 화면
-          AnalysisHistoryScreen(key: ValueKey('history_$_currentIndex')),
+          AnalysisHistoryScreen(
+            key: ValueKey('history_$_currentIndex'),
+            // 탭이 보일 때만 광고 카드를 요청한다.
+            nativeAdUnitId:
+                _currentIndex == 1 ? _adConfig.historyNativeAdUnitId : null,
+            adConsent: _adConsent,
+            adsAlwaysAllowed: _adConfig.isTest,
+          ),
           // 설정 화면
           SettingsScreen(
+            reminder: _reminder,
             adConsent:
                 _adConfig.enabled && !_adConfig.isTest ? _adConsent : null,
           ),

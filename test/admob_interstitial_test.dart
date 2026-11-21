@@ -72,6 +72,41 @@ void main() {
     expect(await ads.onAnalysisCompleted(), isTrue);
   });
 
+  test('announces the ad only when one is about to show, before showing it',
+      () async {
+    final ads = controller()..updateConsent(true);
+    await pumpEventQueue();
+    var announced = 0;
+    var showsWhenAnnounced = -1;
+    Future<void> beforeShow() async {
+      announced++;
+      showsWhenAnnounced = backend.handles.first.shows;
+    }
+
+    expect(await ads.onAnalysisCompleted(beforeShow: beforeShow), isFalse);
+    expect(announced, 0);
+
+    expect(await ads.onAnalysisCompleted(beforeShow: beforeShow), isTrue);
+    expect(announced, 1);
+    expect(showsWhenAnnounced, 0);
+    expect(backend.handles.first.shows, 1);
+  });
+
+  test('an ad is not shown if the app is torn down during the announcement',
+      () async {
+    final ads = controller()..updateConsent(true);
+    await pumpEventQueue();
+    await ads.onAnalysisCompleted();
+
+    final shown = await ads.onAnalysisCompleted(
+      beforeShow: () async => ads.dispose(),
+    );
+
+    expect(shown, isFalse);
+    expect(backend.handles.first.shows, 0);
+    expect(backend.handles.first.disposed, isTrue);
+  });
+
   test('skips without consent or without a ready ad', () async {
     final ads = controller();
     await ads.onAnalysisCompleted();
@@ -101,6 +136,22 @@ void main() {
       final debugTest =
           AdMobConfig(release: false, platform: platform, testMode: true);
       expect(debugTest.interstitialAdUnitId, startsWith('ca-app-pub-3940'));
+    }
+  });
+
+  test('the history card stays off in release until its units exist', () {
+    for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+      expect(
+          AdMobConfig(release: true, platform: platform).historyNativeAdUnitId,
+          isNull);
+      expect(
+          AdMobConfig(release: false, platform: platform, testMode: true)
+              .historyNativeAdUnitId,
+          startsWith('ca-app-pub-3940'));
+      expect(
+          AdMobConfig(release: false, platform: platform)
+              .historyNativeAdUnitId,
+          isNull);
     }
   });
 }

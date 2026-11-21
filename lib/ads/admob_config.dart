@@ -27,6 +27,13 @@ class AdMobConfig {
       'ca-app-pub-3940256099942544/1033173712';
   static const iosTestInterstitialId = 'ca-app-pub-3940256099942544/4411468910';
 
+  // History-tab native card. Empty until the units exist in the AdMob
+  // console; an empty id makes release builds skip the card.
+  static const androidProductionHistoryNativeId = '';
+  static const iosProductionHistoryNativeId = '';
+  static const androidTestNativeId = 'ca-app-pub-3940256099942544/2247696110';
+  static const iosTestNativeId = 'ca-app-pub-3940256099942544/3986624511';
+
   static final AdMobConfig current = AdMobConfig(
     release: kReleaseMode,
     platform: defaultTargetPlatform,
@@ -62,6 +69,14 @@ class AdMobConfig {
     final id = platform == TargetPlatform.android
         ? (isTest ? androidTestInterstitialId : androidProductionInterstitialId)
         : (isTest ? iosTestInterstitialId : iosProductionInterstitialId);
+    return id.isEmpty ? null : id;
+  }
+
+  String? get historyNativeAdUnitId {
+    if (!enabled) return null;
+    final id = platform == TargetPlatform.android
+        ? (isTest ? androidTestNativeId : androidProductionHistoryNativeId)
+        : (isTest ? iosTestNativeId : iosProductionHistoryNativeId);
     return id.isEmpty ? null : id;
   }
 }
