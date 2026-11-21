@@ -151,7 +151,12 @@ class AdMobInterstitialController {
   }
 
   /// Returns true when an ad was shown.
-  Future<bool> onAnalysisCompleted() async {
+  ///
+  /// [beforeShow] runs only when an ad is about to appear, so the caller can
+  /// announce it instead of covering the screen the instant a file is picked.
+  Future<bool> onAnalysisCompleted({
+    Future<void> Function()? beforeShow,
+  }) async {
     if (adUnitId == null || _disposed || _showing) return false;
     final prefs = await _prefs();
     final allowed = await _policy.recordAnalysisAndCheck(prefs);
@@ -163,6 +168,14 @@ class AdMobInterstitialController {
     _ready = null;
     _showing = true;
     await _policy.markShown(prefs);
+    if (beforeShow != null) {
+      await beforeShow();
+      if (_disposed) {
+        _showing = false;
+        unawaited(ad.dispose());
+        return false;
+      }
+    }
     await ad.show(onClosed: () {
       _showing = false;
       unawaited(ad.dispose());

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../ads/ad_consent_controller.dart';
+import '../reminders/recheck_reminder.dart';
 import 'faq_screen.dart';
 import 'terms_screen.dart';
 import 'privacy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, this.adConsent});
+  const SettingsScreen({super.key, this.adConsent, this.reminder});
 
   final AdConsentController? adConsent;
+  final RecheckReminderController? reminder;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -17,11 +19,35 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String _appVersion = '';
   String _buildNumber = '';
+  bool _reminderEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _loadAppInfo();
+    _loadReminder();
+  }
+
+  Future<void> _loadReminder() async {
+    final enabled = await widget.reminder?.isEnabled() ?? false;
+    if (!mounted) return;
+    setState(() => _reminderEnabled = enabled);
+  }
+
+  Future<void> _setReminder(bool value) async {
+    final reminder = widget.reminder;
+    if (reminder == null) return;
+    if (!value) {
+      await reminder.disable();
+    } else if (!await reminder.enable()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('알림 권한이 꺼져 있어요. 기기 설정에서 알림을 허용해 주세요.'),
+      ));
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _reminderEnabled = value);
   }
 
   Future<void> _loadAppInfo() async {
@@ -60,6 +86,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (widget.reminder != null) ...[
+              _buildSectionTitle('알림'),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                value: _reminderEnabled,
+                onChanged: _setReminder,
+                activeThumbColor: const Color(0xFFEC4899),
+                tileColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                title: const Text('다시 확인 알림'),
+                subtitle: const Text('분석하고 2주 뒤에 새 파일로 확인하라고 알려 드려요'),
+              ),
+              const SizedBox(height: 24),
+            ],
             _buildSectionTitle('지원 및 법적 고지'),
             const SizedBox(height: 12),
             _buildButton(
