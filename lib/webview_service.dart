@@ -130,14 +130,30 @@ class WebViewService {
           controller!.platform as AndroidWebViewController;
       androidController
           .setOnShowFileSelector((FileSelectorParams params) async {
-        final result = await FilePicker.platform.pickFiles();
-        if (result != null && result.files.isNotEmpty) {
-          final path = result.files.first.path;
-          if (path != null) {
-            return [Uri.file(path).toString()];
-          }
+        // 웹의 accept(.zip,.json,.html)를 따라 선택 창을 거릅니다.
+        // 필터가 없으면 사진·PDF까지 보여서 잘못된 파일 업로드가 잦았습니다(iOS는 accept를 따름).
+        final extensions = allowedExtensionsFromAccept(params.acceptTypes);
+        final allowMultiple = params.mode == FileSelectorMode.openMultiple;
+        FilePickerResult? result;
+        try {
+          result = extensions.isEmpty
+              ? await FilePicker.platform
+                  .pickFiles(allowMultiple: allowMultiple)
+              : await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: extensions,
+                  allowMultiple: allowMultiple,
+                );
+        } catch (_) {
+          // 일부 기기에서 확장자 필터가 실패하면 예전처럼 전체 파일을 보여 줍니다.
+          result =
+              await FilePicker.platform.pickFiles(allowMultiple: allowMultiple);
         }
-        return [];
+        if (result == null) return [];
+        return result.files
+            .where((file) => file.path != null)
+            .map((file) => Uri.file(file.path!).toString())
+            .toList();
       });
     }
 
@@ -145,6 +161,29 @@ class WebViewService {
     if (Platform.isIOS) {
       // iOS에서는 별도 설정이 필요하지 않음
     }
+  }
+
+  /// `<input accept>` 값(".zip", "application/json" 등)을 파일 선택 창 확장자 목록으로 바꿉니다.
+  /// 알 수 없는 값만 있으면 빈 목록을 돌려 전체 파일을 보여 줍니다.
+  static List<String> allowedExtensionsFromAccept(List<String> acceptTypes) {
+    const mimeToExtension = {
+      'application/zip': 'zip',
+      'application/x-zip-compressed': 'zip',
+      'application/json': 'json',
+      'text/html': 'html',
+    };
+    final result = <String>{};
+    for (final raw in acceptTypes.expand((value) => value.split(','))) {
+      final type = raw.trim().toLowerCase();
+      if (type.isEmpty) continue;
+      if (type.startsWith('.')) {
+        final ext = type.substring(1);
+        if (RegExp(r'^[a-z0-9]{1,10}$').hasMatch(ext)) result.add(ext);
+      } else if (mimeToExtension.containsKey(type)) {
+        result.add(mimeToExtension[type]!);
+      }
+    }
+    return result.toList();
   }
 
   void _initializeNotifications() {
