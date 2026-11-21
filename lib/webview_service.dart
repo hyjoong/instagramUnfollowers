@@ -314,10 +314,8 @@ class WebViewService {
       final data = Map<String, dynamic>.from(
           jsonDecode(message) as Map<String, dynamic>);
 
-      if (data['type'] == 'unfollower_analysis_complete') {
-        _showAnalysisNotification(data['data']);
-      } else if (data['type'] == 'detailed_analysis_complete') {
-        _showAnalysisNotification(data['data']);
+      // 분석은 앱을 보고 있는 동안 바로 끝나므로 완료 알림은 띄우지 않는다.
+      if (data['type'] == 'detailed_analysis_complete') {
         _saveDetailedAnalysisToHistory(data['data']);
       }
     } catch (e) {
@@ -330,47 +328,13 @@ class WebViewService {
       final data = Map<String, dynamic>.from(
           jsonDecode(message) as Map<String, dynamic>);
 
-      if (data['type'] == 'unfollower_analysis_complete') {
-        _showAnalysisNotification(data['data']);
-      } else if (data['type'] == 'detailed_analysis_complete') {
-        _showAnalysisNotification(data['data']);
+      // 분석은 앱을 보고 있는 동안 바로 끝나므로 완료 알림은 띄우지 않는다.
+      if (data['type'] == 'detailed_analysis_complete') {
         _saveDetailedAnalysisToHistory(data['data']);
       }
     } catch (e) {
       print('Failed to handle unfollower notification: $e');
     }
-  }
-
-  void _showAnalysisNotification(Map<String, dynamic> data) {
-    final unfollowersCount = data['unfollowersCount'] ?? 0;
-    final fansCount = data['fansCount'] ?? 0;
-    final mutualCount = data['mutualCount'] ?? 0;
-    final totalFollowers = data['totalFollowers'] ?? 0;
-    final totalFollowing = data['totalFollowing'] ?? 0;
-
-    final message = '분석 완료!\n'
-        '언팔로워: $unfollowersCount명\n'
-        '팬: $fansCount명\n'
-        '맞팔: $mutualCount명\n'
-        '총 팔로워: $totalFollowers명\n'
-        '총 팔로잉: $totalFollowing명';
-
-    // 로컬 알림 표시
-    FlutterLocalNotificationsPlugin().show(
-      0,
-      '인스타그램 분석 완료',
-      message,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'unfollower_analysis',
-          '언팔로워 분석',
-          channelDescription: '인스타그램 언팔로워 분석 알림',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
-    );
   }
 
   void _saveDetailedAnalysisToHistory(Map<String, dynamic> data) async {
