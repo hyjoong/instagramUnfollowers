@@ -139,11 +139,17 @@ void main() {
     }
   });
 
-  test('the history card stays off in release until its units exist', () {
+  test('release uses publisher history card ids, debug test mode uses samples',
+      () {
+    expect(
+        const AdMobConfig(release: true, platform: TargetPlatform.android)
+            .historyNativeAdUnitId,
+        'ca-app-pub-2951563150255051/4023155735');
+    expect(
+        const AdMobConfig(release: true, platform: TargetPlatform.iOS)
+            .historyNativeAdUnitId,
+        'ca-app-pub-2951563150255051/9237447257');
     for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
-      expect(
-          AdMobConfig(release: true, platform: platform).historyNativeAdUnitId,
-          isNull);
       expect(
           AdMobConfig(release: false, platform: platform, testMode: true)
               .historyNativeAdUnitId,

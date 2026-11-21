@@ -27,10 +27,11 @@ class AdMobConfig {
       'ca-app-pub-3940256099942544/1033173712';
   static const iosTestInterstitialId = 'ca-app-pub-3940256099942544/4411468910';
 
-  // History-tab native card. Empty until the units exist in the AdMob
-  // console; an empty id makes release builds skip the card.
-  static const androidProductionHistoryNativeId = '';
-  static const iosProductionHistoryNativeId = '';
+  // History-tab native card. An empty id makes release builds skip the card.
+  static const androidProductionHistoryNativeId =
+      'ca-app-pub-2951563150255051/4023155735';
+  static const iosProductionHistoryNativeId =
+      'ca-app-pub-2951563150255051/9237447257';
   static const androidTestNativeId = 'ca-app-pub-3940256099942544/2247696110';
   static const iosTestNativeId = 'ca-app-pub-3940256099942544/3986624511';
 
