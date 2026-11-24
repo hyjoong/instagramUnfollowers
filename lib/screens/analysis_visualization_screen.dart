@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../l10n/app_locale.dart';
 import '../l10n/gen/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -632,7 +632,7 @@ class _AnalysisVisualizationScreenState
     try {
       final date = DateTime.parse(timestamp).toLocal();
       final locale = Localizations.localeOf(context).toLanguageTag();
-      return DateFormat.yMMMd(locale).format(date);
+      return appDateFormat(locale).format(date);
     } catch (e) {
       return timestamp;
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'supported_languages.dart';
@@ -126,3 +127,9 @@ class DeviceLocaleObserver with WidgetsBindingObserver {
     if (locales != null) store.updateDeviceLocales(locales);
   }
 }
+
+/// Medium date (`Nov 21, 2026`) in [locale]. Digits stay 0-9 in every
+/// language so dates match the counts next to them (Arabic would otherwise
+/// mix ٢١ with 35).
+DateFormat appDateFormat(String locale) =>
+    DateFormat.yMMMd(locale)..useNativeDigits = false;

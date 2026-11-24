@@ -8,7 +8,7 @@ import '../history/history_compare.dart';
 import 'package:share_plus/share_plus.dart';
 import '../ads/ad_consent_controller.dart';
 import '../ads/admob_native_card.dart';
-import 'package:intl/intl.dart';
+import '../l10n/app_locale.dart';
 import '../l10n/gen/app_localizations.dart';
 
 class AnalysisHistoryScreen extends StatefulWidget {
@@ -213,7 +213,7 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
     try {
       final date = DateTime.parse(timestamp).toLocal();
       final locale = Localizations.localeOf(context).toLanguageTag();
-      return DateFormat.yMMMd(locale).add_Hm().format(date);
+      return appDateFormat(locale).add_Hm().format(date);
     } catch (e) {
       return timestamp;
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackfollows/l10n/app_locale.dart';
 import 'package:trackfollows/l10n/gen/app_localizations.dart';
@@ -153,6 +154,14 @@ void main() {
       final l10n = lookupAppLocalizations(locale);
       expect(l10n.navSettings, isNotEmpty, reason: locale.languageCode);
       expect(l10n.faqIsSafeQuestion, isNotEmpty, reason: locale.languageCode);
+    }
+  });
+
+  test('dates use 0-9 digits in every language', () async {
+    await initializeDateFormatting();
+    final date = DateTime(2026, 11, 21);
+    for (final code in supportedLanguageCodes) {
+      expect(appDateFormat(code).format(date), contains('21'), reason: code);
     }
   });
 }

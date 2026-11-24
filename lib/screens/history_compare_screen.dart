@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../history/history_compare.dart';
+import '../l10n/app_locale.dart';
 import '../l10n/gen/app_localizations.dart';
 import 'analysis_visualization_screen.dart';
 
 const _pink = Color(0xFFEC4899);
 
 String formatSnapshotDate(HistorySnapshot s, AppLocalizations l10n) {
-  final day = DateFormat.yMMMd(l10n.localeName).format(s.date);
+  final day = appDateFormat(l10n.localeName).format(s.date);
   return s.dateFromFileName ? day : l10n.compareAnalysisDay(day);
 }
 
