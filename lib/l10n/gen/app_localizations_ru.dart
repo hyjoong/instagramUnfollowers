@@ -91,7 +91,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get onboardingWelcomeBody =>
-      'Анализируйте данные подписчиков Instagram: смотрите, кто отписался, взаимные подписки и даты подписки.';
+      'Проанализируйте данные подписчиков Instagram: узнайте, кто не подписан на вас в ответ, и посмотрите взаимные подписки и даты подписки.';
 
   @override
   String get onboardingSafeTitle => '100% безопасно и конфиденциально';
@@ -197,12 +197,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String historyLostCount(String count) {
-    return 'Отписались $count';
+    return 'Отписались: $count';
   }
 
   @override
   String historyGainedCount(String count) {
-    return 'Новые подписчики $count';
+    return 'Новые подписчики: $count';
   }
 
   @override
@@ -265,11 +265,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get compareNewEmpty => 'За этот период новых подписчиков нет.';
 
   @override
-  String get compareRenamedTitle => 'Аккаунты со сменой имени пользователя';
+  String get compareRenamedTitle => 'Сменили имя пользователя';
 
   @override
   String get compareDisappearedNote =>
-      'Среди пропавших из списка аккаунтов бывают и отключённые или удалённые, а не только отписавшиеся. Откройте профиль, чтобы проверить.';
+      'Среди пропавших из списка аккаунтов бывают и деактивированные или удалённые, а не только отписавшиеся. Откройте профиль, чтобы проверить.';
 
   @override
   String get compareNoChange => 'Без изменений';
@@ -367,7 +367,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsRecheckBody =>
-      'Напомним через 2 недели после анализа проверить снова с новым файлом';
+      'Через 2 недели после анализа напомним проверить ещё раз с новым файлом';
 
   @override
   String get settingsSupportSection => 'Поддержка и правовая информация';
@@ -443,7 +443,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get reminderChannelDescription =>
-      'Напоминает через 2 недели после анализа проверить снова с новым файлом';
+      'Через 2 недели после анализа напоминает проверить ещё раз с новым файлом';
 
   @override
   String get faqTitle => 'Часто задаваемые вопросы';

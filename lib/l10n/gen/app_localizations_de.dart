@@ -24,7 +24,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonFans => 'Fans';
 
   @override
-  String get commonMutual => 'Gegenseitig';
+  String get commonMutual => 'Gegenseitige Follower';
 
   @override
   String get commonFollowers => 'Follower';
@@ -79,7 +79,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mainExitConfirm => 'Beenden';
 
   @override
-  String get loadingTitle => 'Instagram Unfollower-Analyse';
+  String get loadingTitle => 'Instagram-Unfollower-Analyse';
 
   @override
   String get loadingMessage => 'Wird geladen...';
@@ -113,7 +113,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onboardingReadyBody =>
-      'Starten Sie jetzt Ihre Instagram Follower-Analyse!';
+      'Starten Sie jetzt Ihre Instagram-Follower-Analyse!';
 
   @override
   String get onboardingSkip => 'Überspringen';
@@ -201,12 +201,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String historyLostCount(String count) {
-    return 'Unfollows $count';
+    return 'Entfolgt: $count';
   }
 
   @override
   String historyGainedCount(String count) {
-    return 'Neue Follower $count';
+    return 'Neue Follower: $count';
   }
 
   @override
@@ -242,7 +242,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String statsMutualRate(String rate) {
-    return 'Gegenseitig-Quote: $rate %';
+    return 'Anteil gegenseitiger Follower: $rate %';
   }
 
   @override
@@ -265,7 +265,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get compareLostEmpty =>
-      'In diesem Zeitraum hat Ihnen niemand entfolgt.';
+      'In diesem Zeitraum ist Ihnen niemand entfolgt.';
 
   @override
   String get compareNewEmpty =>
@@ -276,7 +276,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get compareDisappearedNote =>
-      'Unter den verschwundenen Konten können auch deaktivierte oder gelöschte sein, nicht nur Unfollows. Tippen Sie auf das Profil, um das zu prüfen.';
+      'Unter den aus der Liste verschwundenen Konten können auch deaktivierte oder gelöschte Konten sein, die Ihnen nicht entfolgt sind. Tippen Sie auf das Profil, um das zu prüfen.';
 
   @override
   String get compareNoChange => 'Keine Änderung';
@@ -289,7 +289,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get compareChange => 'Änderung';
 
   @override
-  String get compareLost => 'Unfollows';
+  String get compareLost => 'Entfolgt';
 
   @override
   String get appSettingsTitle => 'App-Einstellungen';
@@ -347,7 +347,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get appSettingsNothingToExport => 'Keine Analysedaten zum Exportieren';
 
   @override
-  String get appSettingsExportTitle => 'TrackFollows Analysedaten-Export';
+  String get appSettingsExportTitle => 'TrackFollows-Analysedaten-Export';
 
   @override
   String appSettingsExportCreated(String date) {
@@ -376,7 +376,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsRecheckBody =>
-      'Wir erinnern Sie 2 Wochen nach der Analyse, mit einer neuen Datei erneut zu prüfen';
+      'Wir erinnern Sie 2 Wochen nach der Analyse daran, mit einer neuen Datei erneut zu prüfen';
 
   @override
   String get settingsSupportSection => 'Support und Rechtliches';
@@ -442,7 +442,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der Status der Datenschutzeinstellungen konnte nicht geprüft werden. Bitte versuchen Sie es gleich noch einmal.';
 
   @override
-  String get reminderTitle => 'Zeit, Unfollower erneut zu prüfen';
+  String get reminderTitle => 'Zeit zu prüfen, wer Ihnen entfolgt ist';
 
   @override
   String get reminderBody =>
@@ -453,7 +453,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reminderChannelDescription =>
-      'Erinnert Sie 2 Wochen nach der Analyse, mit einer neuen Datei erneut zu prüfen';
+      'Erinnert Sie 2 Wochen nach der Analyse daran, mit einer neuen Datei erneut zu prüfen';
 
   @override
   String get faqTitle => 'Häufig gestellte Fragen';

@@ -193,12 +193,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String historyLostCount(String count) {
-    return '解除 $count';
+    return 'フォロー解除 $count';
   }
 
   @override
   String historyGainedCount(String count) {
-    return '新規フォロワー $count';
+    return '新しいフォロワー $count';
   }
 
   @override
@@ -277,7 +277,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get compareChange => '増減';
 
   @override
-  String get compareLost => '解除';
+  String get compareLost => 'フォロー解除';
 
   @override
   String get appSettingsTitle => 'アプリ設定';
@@ -418,7 +418,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'プライバシー設定の状態を確認できませんでした。しばらくしてからもう一度お試しください。';
 
   @override
-  String get reminderTitle => 'フォロー解除を再確認するタイミングです';
+  String get reminderTitle => 'そろそろフォロー解除をチェックしましょう';
 
   @override
   String get reminderBody =>

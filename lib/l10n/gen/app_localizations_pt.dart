@@ -33,7 +33,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get commonTotalFollowers => 'Total de seguidores';
 
   @override
-  String get commonTotalFollowing => 'Total seguindo';
+  String get commonTotalFollowing => 'Total de seguidos';
 
   @override
   String get commonNewFollowers => 'Novos seguidores';
@@ -62,7 +62,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Você só vai saber quem deixou de te seguir na próxima análise. Quer que a gente avise em 2 semanas?';
 
   @override
-  String get mainReminderAction => 'Avisar-me';
+  String get mainReminderAction => 'Me avisar';
 
   @override
   String get mainReminderEnabled =>
@@ -87,11 +87,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get errorTitle => 'Erro de conexão';
 
   @override
-  String get onboardingWelcomeTitle => 'Bem-vindo ao TrackFollows';
+  String get onboardingWelcomeTitle => 'Boas-vindas ao TrackFollows';
 
   @override
   String get onboardingWelcomeBody =>
-      'Analise os dados de seguidores do Instagram e veja quem não te segue, seguidores mútuos e datas de follow.';
+      'Analise os dados de seguidores do Instagram e veja quem não te segue, os seguidores mútuos e as datas em que começaram a seguir.';
 
   @override
   String get onboardingSafeTitle => '100% seguro e privado';
@@ -199,7 +199,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String historyLostCount(String count) {
-    return 'Deixaram de seguir $count';
+    return 'Deixaram de te seguir $count';
   }
 
   @override
@@ -271,7 +271,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get compareDisappearedNote =>
-      'Entre as contas que sumiram da lista, algumas podem ter sido desativadas ou excluídas, e não só deixado de te seguir. Toque no perfil para conferir.';
+      'Algumas contas que sumiram da lista podem ter sido desativadas ou excluídas, em vez de terem deixado de te seguir. Toque no perfil para conferir.';
 
   @override
   String get compareNoChange => 'Sem mudanças';
@@ -284,7 +284,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get compareChange => 'Variação';
 
   @override
-  String get compareLost => 'Deixaram de seguir';
+  String get compareLost => 'Deixaram de te seguir';
 
   @override
   String get appSettingsTitle => 'Ajustes do app';
@@ -411,7 +411,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsLanguage => 'Idioma';
 
   @override
-  String get settingsLanguageSystem => 'Seguir idioma do dispositivo';
+  String get settingsLanguageSystem => 'Usar o idioma do dispositivo';
 
   @override
   String get settingsOpenLinkFailed => 'Não foi possível abrir o link.';
@@ -436,7 +436,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível verificar o status das configurações de privacidade. Tente novamente em instantes.';
 
   @override
-  String get reminderTitle => 'Hora de verificar de novo';
+  String get reminderTitle => 'Hora de ver quem deixou de te seguir';
 
   @override
   String get reminderBody =>

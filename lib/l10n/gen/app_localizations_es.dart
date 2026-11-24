@@ -389,7 +389,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsPrivacy => 'Política de Privacidad';
 
   @override
-  String get settingsAdPrivacy => 'Privacidad de los anuncios';
+  String get settingsAdPrivacy => 'Privacidad de anuncios';
 
   @override
   String get settingsAppInfoSection => 'Información de la app';
@@ -414,7 +414,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsLanguage => 'Idioma';
 
   @override
-  String get settingsLanguageSystem => 'Seguir el idioma del dispositivo';
+  String get settingsLanguageSystem => 'Usar el idioma del dispositivo';
 
   @override
   String get settingsOpenLinkFailed => 'No se pudo abrir el enlace.';
@@ -440,8 +440,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo comprobar el estado de los ajustes de privacidad. Inténtalo de nuevo en un momento.';
 
   @override
-  String get reminderTitle =>
-      'Es hora de volver a comprobar quién te dejó de seguir';
+  String get reminderTitle => 'Es hora de revisar quién dejó de seguirte';
 
   @override
   String get reminderBody =>

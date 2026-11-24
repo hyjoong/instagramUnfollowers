@@ -108,7 +108,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Just upload your Instagram data file and see your results instantly.';
 
   @override
-  String get onboardingReadyTitle => 'You\'re ready to start';
+  String get onboardingReadyTitle => 'You\'re all set';
 
   @override
   String get onboardingReadyBody => 'Start analyzing your Instagram followers!';
@@ -187,7 +187,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyFirstRecord =>
-      'First record · Changes will be compared from your next analysis';
+      'First record · Changes will show after your next analysis';
 
   @override
   String get historyNoChange => 'No follower changes since the previous record';
@@ -248,12 +248,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String compareAnalysisDay(String date) {
-    return '$date (analysis day)';
+    return '$date (analysis date)';
   }
 
   @override
   String get compareAnalysisDayNote =>
-      '(analysis day) marks an older record whose file name has no export date, so the day it was analyzed is shown instead.';
+      '(analysis date) marks an older record whose file name has no export date, so the day it was analyzed is shown instead.';
 
   @override
   String get compareLostTitle => 'People who unfollowed you';
@@ -407,7 +407,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLanguage => 'Language';
 
   @override
-  String get settingsLanguageSystem => 'Follow device language';
+  String get settingsLanguageSystem => 'Use device language';
 
   @override
   String get settingsOpenLinkFailed => 'Couldn\'t open the link.';
@@ -417,7 +417,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adConsentPreparing =>
-      'Ad privacy settings are getting ready. Please try again in a moment.';
+      'Ad privacy settings are still loading. Please try again in a moment.';
 
   @override
   String get adConsentNothingToChange =>
@@ -432,7 +432,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t check the privacy settings status. Please try again in a moment.';
 
   @override
-  String get reminderTitle => 'Time to recheck your unfollowers';
+  String get reminderTitle => 'Time to check who unfollowed you';
 
   @override
   String get reminderBody =>
