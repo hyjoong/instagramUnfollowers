@@ -101,3 +101,12 @@ class AppLocaleStore extends ValueNotifier<Locale> {
     value = resolveAppLocale(savedCode, deviceLocales);
   }
 }
+
+/// Privacy policy / terms page. The web has these documents only in Korean
+/// and English, so every other language opens the English one.
+String legalUrlFor(String origin, Locale locale, String path) {
+  final docLocale = locale.languageCode == _unprefixedLocale
+      ? const Locale(_unprefixedLocale)
+      : fallbackLocale;
+  return webUrlFor(origin, docLocale, path);
+}

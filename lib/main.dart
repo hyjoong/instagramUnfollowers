@@ -391,6 +391,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
           // 설정 화면
           SettingsScreen(
             reminder: _reminder,
+            localeStore: widget.localeStore,
             adConsent:
                 _adConfig.enabled && !_adConfig.isTest ? _adConsent : null,
           ),

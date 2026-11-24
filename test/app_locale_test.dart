@@ -52,6 +52,15 @@ void main() {
           webUrlFor(origin, const Locale('en'), '/terms'), '$origin/en/terms');
     });
 
+    test('legal pages exist only in ko and en', () {
+      expect(legalUrlFor(origin, const Locale('ko'), '/privacy'),
+          '$origin/privacy');
+      expect(legalUrlFor(origin, const Locale('en'), '/terms'),
+          '$origin/en/terms');
+      expect(legalUrlFor(origin, const Locale('ja'), '/privacy'),
+          '$origin/en/privacy');
+    });
+
     test('reads the language back from a page address', () {
       expect(localeFromWebUrl('$origin/ja/file'), const Locale('ja'));
       expect(localeFromWebUrl('$origin/'), const Locale('ko'));

@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../ads/ad_consent_controller.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_locale.dart';
 import '../reminders/recheck_reminder.dart';
+import '../webview_service.dart';
 import 'faq_screen.dart';
-import 'terms_screen.dart';
-import 'privacy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, this.adConsent, this.reminder});
+  const SettingsScreen({
+    super.key,
+    this.adConsent,
+    this.reminder,
+    this.localeStore,
+  });
 
   final AdConsentController? adConsent;
   final RecheckReminderController? reminder;
+  final AppLocaleStore? localeStore;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -57,6 +64,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _appVersion = packageInfo.version;
       _buildNumber = packageInfo.buildNumber;
     });
+  }
+
+  /// Legal documents live on the web only, so they stay in one place.
+  Future<void> _openLegalPage(String path) async {
+    final locale = widget.localeStore?.value ?? fallbackLocale;
+    final url = Uri.parse(legalUrlFor(WebViewService.webOrigin, locale, path));
+    final opened = await launchUrl(url, mode: LaunchMode.externalApplication)
+        .catchError((_) => false);
+    if (opened || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('링크를 열지 못했어요.')),
+    );
   }
 
   Future<void> _showAdPrivacyOptions() async {
@@ -116,19 +135,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildButton(
               '이용약관',
               Icons.description_outlined,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const TermsScreen()),
-              ),
+              () => _openLegalPage('/terms'),
             ),
             const SizedBox(height: 8),
             _buildButton(
               '개인정보 처리방침',
               Icons.privacy_tip_outlined,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PrivacyScreen()),
-              ),
+              () => _openLegalPage('/privacy'),
             ),
             if (widget.adConsent != null)
               AnimatedBuilder(
