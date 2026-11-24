@@ -504,25 +504,35 @@ ${l10n.historyShareFooter}
         color: const Color(0xFFFDF2F8),
         borderRadius: BorderRadius.circular(8),
       ),
+      // One wrapping text: translations are longer than the Korean line.
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (noChange)
-            Text(_l10n.historyNoChange,
-                style: const TextStyle(fontSize: 12, color: Colors.black54))
-          else ...[
-            Text('${_l10n.historyVsPrevious}  ',
-                style: const TextStyle(fontSize: 12, color: Colors.black54)),
-            Text(_l10n.historyLostCount('$lost'),
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red)),
-            const Text('  ·  ', style: TextStyle(fontSize: 12, color: Colors.black38)),
-            Text(_l10n.historyGainedCount('$gained'),
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700)),
-          ],
+          Flexible(
+            child: Text.rich(
+              noChange
+                  ? TextSpan(text: _l10n.historyNoChange)
+                  : TextSpan(children: [
+                      TextSpan(text: '${_l10n.historyVsPrevious}  '),
+                      TextSpan(
+                        text: _l10n.historyLostCount('$lost'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.red),
+                      ),
+                      const TextSpan(
+                        text: '  ·  ',
+                        style: TextStyle(color: Colors.black38),
+                      ),
+                      TextSpan(
+                        text: _l10n.historyGainedCount('$gained'),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700),
+                      ),
+                    ]),
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+          ),
           const SizedBox(width: 4),
           const Icon(Icons.chevron_right, size: 16, color: Colors.black38),
         ],

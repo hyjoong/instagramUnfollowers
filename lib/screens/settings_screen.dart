@@ -94,7 +94,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final picked = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+      ),
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
