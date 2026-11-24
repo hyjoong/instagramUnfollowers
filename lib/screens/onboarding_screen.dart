@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/gen/app_localizations.dart';
+
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
 
@@ -17,25 +19,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingPage> _pages = [
+  AppLocalizations get _l10n => AppLocalizations.of(context);
+
+  List<OnboardingPage> get _pages => [
     OnboardingPage(
-      title: 'TrackFollows에 오신 것을 환영합니다',
-      description: '인스타그램 팔로워 데이터를 분석하여 언팔로워, 맞팔 상태, 팔로우 날짜를 확인해보세요.',
+      title: _l10n.onboardingWelcomeTitle,
+      description: _l10n.onboardingWelcomeBody,
       icon: Icons.analytics,
     ),
     OnboardingPage(
-      title: '100% 안전하고 개인정보 보호',
-      description: '모든 데이터 처리는 브라우저에서 이루어집니다. 개인정보를 수집하거나 저장하지 않습니다.',
+      title: _l10n.onboardingSafeTitle,
+      description: _l10n.onboardingSafeBody,
       icon: Icons.security,
     ),
     OnboardingPage(
-      title: '사용하기 쉬움',
-      description: '인스타그램 데이터 파일을 업로드하기만 하면 즉시 분석 결과를 확인할 수 있습니다.',
+      title: _l10n.onboardingEasyTitle,
+      description: _l10n.onboardingEasyBody,
       icon: Icons.upload_file,
     ),
     OnboardingPage(
-      title: '시작할 준비가 되었습니다',
-      description: '인스타그램 팔로워 분석을 시작해보세요!',
+      title: _l10n.onboardingReadyTitle,
+      description: _l10n.onboardingReadyBody,
       icon: Icons.rocket_launch,
     ),
   ];
@@ -165,9 +169,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   if (_currentPage < _pages.length - 1)
                     TextButton(
                       onPressed: _completeOnboarding,
-                      child: const Text(
-                        '건너뛰기',
-                        style: TextStyle(
+                      child: Text(
+                        _l10n.onboardingSkip,
+                        style: const TextStyle(
                           fontSize: 16,
                           color: Colors.grey,
                         ),
@@ -193,7 +197,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ),
                     child: Text(
-                      _currentPage < _pages.length - 1 ? '다음' : '시작하기',
+                      _currentPage < _pages.length - 1 ? _l10n.onboardingNext : _l10n.onboardingStart,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
