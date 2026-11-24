@@ -54,6 +54,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
+  in_app_review: ^2.0.12
 
 dev_dependencies:
   flutter_test:

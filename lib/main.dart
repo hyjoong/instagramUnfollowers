@@ -18,6 +18,7 @@ import 'ads/admob_config.dart';
 import 'ads/admob_interstitial.dart';
 import 'ads/ad_consent_controller.dart';
 import 'reminders/recheck_reminder.dart';
+import 'review/review_prompt.dart';
 import 'l10n/app_locale.dart';
 import 'l10n/gen/app_localizations.dart';
 
@@ -92,6 +93,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   late final _interstitial = AdMobInterstitialController(
     adUnitId: _adConfig.interstitialAdUnitId,
   );
+  final _review = ReviewPromptController();
   late final _reminder = RecheckReminderController(
     locale: () => widget.localeStore.value,
   );
@@ -219,8 +221,12 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
           beforeShow: _showAdLeadIn,
         );
     await _reminder.onAnalysisCompleted();
-    // 광고가 뜬 분석에는 권유를 겹치지 않는다.
-    if (adShown || !onAnalysisTab || !mounted) return;
+    // 결과를 보고 있을 때만, 광고가 뜬 분석은 빼고 스토어 리뷰를 요청한다.
+    final reviewed = await _review.onAnalysisCompleted(
+      adShown: adShown || !onAnalysisTab,
+    );
+    // 광고나 리뷰 요청이 뜬 분석에는 권유를 겹치지 않는다.
+    if (adShown || reviewed || !onAnalysisTab || !mounted) return;
     if (!await _reminder.shouldPrompt() || !mounted) return;
     await _reminder.markPrompted();
     if (!mounted) return;
