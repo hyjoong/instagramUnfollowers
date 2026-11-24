@@ -56,6 +56,10 @@ class AppLocaleStore extends ValueNotifier<Locale> {
   static const prefsKey = 'app_locale';
   static const onboardingCompletedKey = 'onboarding_completed';
 
+  /// Set on the first launch of a version that has [AppLocaleStore], so the
+  /// existing-user check below runs exactly once per device.
+  static const migratedKey = 'app_locale_migrated';
+
   final SharedPreferences _prefs;
   List<Locale> _deviceLocales;
 
@@ -66,9 +70,12 @@ class AppLocaleStore extends ValueNotifier<Locale> {
     SharedPreferences prefs,
     List<Locale> deviceLocales,
   ) async {
-    if (!prefs.containsKey(prefsKey) &&
-        (prefs.getBool(onboardingCompletedKey) ?? false)) {
-      await prefs.setString(prefsKey, _unprefixedLocale);
+    if (!(prefs.getBool(migratedKey) ?? false)) {
+      if (!prefs.containsKey(prefsKey) &&
+          (prefs.getBool(onboardingCompletedKey) ?? false)) {
+        await prefs.setString(prefsKey, _unprefixedLocale);
+      }
+      await prefs.setBool(migratedKey, true);
     }
     final initial = resolveAppLocale(prefs.getString(prefsKey), deviceLocales);
     return AppLocaleStore._(prefs, deviceLocales, initial);

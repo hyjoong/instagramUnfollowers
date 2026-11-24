@@ -96,6 +96,18 @@ void main() {
       expect(prefs.getString(AppLocaleStore.prefsKey), 'ko');
     });
 
+    test('a new install that finishes onboarding is not pinned later', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await AppLocaleStore.load(prefs, const [Locale('en')]);
+      // Onboarding completes during the first session.
+      await prefs.setBool(AppLocaleStore.onboardingCompletedKey, true);
+
+      final next = await AppLocaleStore.load(prefs, const [Locale('en')]);
+      expect(next.value, const Locale('en'));
+      expect(prefs.containsKey(AppLocaleStore.prefsKey), isFalse);
+    });
+
     test('saved choice is kept for existing users', () async {
       final (store, _) = await load({
         AppLocaleStore.onboardingCompletedKey: true,
