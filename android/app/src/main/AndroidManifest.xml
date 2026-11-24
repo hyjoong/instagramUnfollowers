@@ -7,6 +7,7 @@
         android:label="TrackFollows"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:localeConfig="@xml/locales_config"
         android:usesCleartextTraffic="true">
         <!-- Publisher app ID. Debug ads still use Google's sample ad units. -->
         <meta-data
