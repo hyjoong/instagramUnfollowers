@@ -54,6 +54,12 @@ class WebViewService {
           onPageStarted: (String url) {
             // 페이지 로딩 시작
           },
+          // The web switches language with client-side navigation
+          // (pushState), which does not fire onPageFinished.
+          onUrlChange: (UrlChange change) {
+            final url = change.url;
+            if (url != null) _rememberWebLocale(url);
+          },
           onPageFinished: (String url) async {
             _rememberWebLocale(url);
             // 페이지 로딩 완료 후 Flutter 식별자 재설정
