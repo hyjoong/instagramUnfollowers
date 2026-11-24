@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +19,7 @@ import 'ads/admob_interstitial.dart';
 import 'ads/ad_consent_controller.dart';
 import 'reminders/recheck_reminder.dart';
 import 'l10n/app_locale.dart';
+import 'l10n/gen/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,8 @@ void main() async {
     WidgetsBinding.instance.platformDispatcher.locales,
   );
 
+  WidgetsBinding.instance.addObserver(DeviceLocaleObserver(localeStore));
+
   runApp(MyApp(localeStore: localeStore));
 }
 
@@ -47,13 +51,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFEC4899)),
-        useMaterial3: true,
+    // Rebuilds with the new language when it changes in settings or on the web.
+    return ValueListenableBuilder<Locale>(
+      valueListenable: localeStore,
+      builder: (context, locale, _) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        onGenerateTitle: (context) => 'TrackFollows',
+        locale: locale,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFEC4899)),
+          useMaterial3: true,
+        ),
+        home: TrackFollowsPage(localeStore: localeStore),
       ),
-      home: TrackFollowsPage(localeStore: localeStore),
     );
   }
 }

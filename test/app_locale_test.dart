@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackfollows/l10n/app_locale.dart';
+import 'package:trackfollows/l10n/gen/app_localizations.dart';
 
 void main() {
   group('resolveAppLocale', () {
@@ -129,5 +130,17 @@ void main() {
       store.updateDeviceLocales(const [Locale('ru')]);
       expect(store.value, const Locale('ko'));
     });
+  });
+
+  test('generated translations cover exactly the supported languages', () {
+    expect(
+      AppLocalizations.supportedLocales.map((l) => l.languageCode).toSet(),
+      supportedLanguageCodes.toSet(),
+    );
+    for (final locale in supportedAppLocales) {
+      final l10n = lookupAppLocalizations(locale);
+      expect(l10n.navSettings, isNotEmpty, reason: locale.languageCode);
+      expect(l10n.faqIsSafeQuestion, isNotEmpty, reason: locale.languageCode);
+    }
   });
 }

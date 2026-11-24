@@ -1,13 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Languages the web app ships (`i18n.config.ts` in the web repo), in the
-/// same order. The app follows this list so the WebView and the native
-/// screens always agree.
-const supportedLanguageCodes = <String>[
-  'ko', 'en', 'ja', 'es', 'fr', 'de', 'pt', 'hi', //
-  'ru', 'ar', 'tr', 'vi', 'th', 'id', 'ms',
-];
+import 'supported_languages.dart';
+
+export 'supported_languages.dart';
 
 final supportedAppLocales = List<Locale>.unmodifiable(
   supportedLanguageCodes.map(Locale.new),
@@ -109,4 +105,17 @@ String legalUrlFor(String origin, Locale locale, String path) {
       ? const Locale(_unprefixedLocale)
       : fallbackLocale;
   return webUrlFor(origin, docLocale, path);
+}
+
+/// Keeps [AppLocaleStore] in sync when the device languages change while the
+/// app is running (only matters when the user has not picked a language).
+class DeviceLocaleObserver with WidgetsBindingObserver {
+  DeviceLocaleObserver(this.store);
+
+  final AppLocaleStore store;
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    if (locales != null) store.updateDeviceLocales(locales);
+  }
 }
