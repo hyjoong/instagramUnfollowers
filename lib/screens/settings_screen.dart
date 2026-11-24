@@ -14,11 +14,16 @@ class SettingsScreen extends StatefulWidget {
     this.adConsent,
     this.reminder,
     this.localeStore,
+    this.onLocaleSelected,
   });
 
   final AdConsentController? adConsent;
   final RecheckReminderController? reminder;
   final AppLocaleStore? localeStore;
+
+  /// Called after the user picks a language, with the resulting app language
+  /// (used to reopen the WebView in it).
+  final ValueChanged<Locale>? onLocaleSelected;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -81,6 +86,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _pickLanguage() async {
+    final store = widget.localeStore;
+    if (store == null) return;
+    // '' stands for "follow the device language".
+    final current = store.savedCode ?? '';
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final code in ['', ...supportedLanguageCodes])
+              ListTile(
+                title: Text(code.isEmpty
+                    ? _l10n.settingsLanguageSystem
+                    : languageNativeNames[code]!),
+                trailing: code == current
+                    ? const Icon(Icons.check, color: Color(0xFFEC4899))
+                    : null,
+                onTap: () => Navigator.of(context).pop(code),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || picked == current) return;
+    await store.select(picked.isEmpty ? null : Locale(picked));
+    widget.onLocaleSelected?.call(store.value);
+  }
+
   Future<void> _showAdPrivacyOptions() async {
     final error = await widget.adConsent?.showPrivacyOptions();
     if (!mounted || error == null) return;
@@ -122,6 +159,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 title: Text(_l10n.settingsRecheckTitle),
                 subtitle: Text(_l10n.settingsRecheckBody),
+              ),
+              const SizedBox(height: 24),
+            ],
+            if (widget.localeStore != null) ...[
+              _buildSectionTitle(_l10n.settingsLanguage),
+              const SizedBox(height: 12),
+              _buildButton(
+                widget.localeStore!.savedCode == null
+                    ? _l10n.settingsLanguageSystem
+                    : languageNativeNames[widget.localeStore!.value.languageCode]!,
+                Icons.language,
+                _pickLanguage,
               ),
               const SizedBox(height: 24),
             ],

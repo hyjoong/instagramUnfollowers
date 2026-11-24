@@ -419,6 +419,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
           SettingsScreen(
             reminder: _reminder,
             localeStore: widget.localeStore,
+            onLocaleSelected: (locale) =>
+                unawaited(_webViewService?.reloadForLocale(locale)),
             adConsent:
                 _adConfig.enabled && !_adConfig.isTest ? _adConsent : null,
           ),
