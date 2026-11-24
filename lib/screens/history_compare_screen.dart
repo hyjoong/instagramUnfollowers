@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../history/history_compare.dart';
+import '../l10n/gen/app_localizations.dart';
 import 'analysis_visualization_screen.dart';
 
 const _pink = Color(0xFFEC4899);
 
-String formatSnapshotDate(HistorySnapshot s) {
-  final d = s.date;
-  final day =
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-  return s.dateFromFileName ? day : '$day (분석일)';
+String formatSnapshotDate(HistorySnapshot s, AppLocalizations l10n) {
+  final day = DateFormat.yMMMd(l10n.localeName).format(s.date);
+  return s.dateFromFileName ? day : l10n.compareAnalysisDay(day);
 }
 
 /// 두 분석 기록 사이에 달라진 팔로워를 보여 주는 화면
@@ -21,19 +21,20 @@ class HistoryCompareScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final usesAnalysisDate =
         !diff.older.dateFromFileName || !diff.newer.dateFromFileName;
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('기록 비교',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+        title: Text(l10n.compareTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         actions: [
           IconButton(
-            tooltip: '최근 기록 통계',
+            tooltip: l10n.compareRecentStats,
             icon: const Icon(Icons.bar_chart, color: Colors.black54),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) =>
@@ -47,42 +48,42 @@ class HistoryCompareScreen extends StatelessWidget {
         children: [
           _Header(diff: diff),
           if (usesAnalysisDate)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
               child: Text(
-                '(분석일)은 파일 이름에 내보낸 날짜가 없는 예전 기록이라 분석한 날로 표시했어요.',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                l10n.compareAnalysisDayNote,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ),
           const SizedBox(height: 16),
           _Section(
             icon: Icons.person_remove_outlined,
             color: Colors.red,
-            title: '나를 언팔한 사람',
+            title: l10n.compareLostTitle,
             names: diff.lostFollowers,
-            emptyText: '이 기간에 나를 언팔한 사람이 없어요.',
+            emptyText: l10n.compareLostEmpty,
             initiallyExpanded: true,
           ),
           _Section(
             icon: Icons.person_add_alt_outlined,
             color: Colors.green,
-            title: '새 팔로워',
+            title: l10n.commonNewFollowers,
             names: diff.newFollowers,
-            emptyText: '이 기간에 새로 생긴 팔로워가 없어요.',
+            emptyText: l10n.compareNewEmpty,
           ),
           if (diff.renamed.isNotEmpty)
             _Section(
               icon: Icons.sync,
               color: Colors.grey,
-              title: '아이디를 바꾼 계정',
+              title: l10n.compareRenamedTitle,
               names: [for (final r in diff.renamed) r.to],
               labels: [for (final r in diff.renamed) '@${r.from} → @${r.to}'],
               emptyText: '',
             ),
           const SizedBox(height: 12),
-          const Text(
-            '목록에서 사라진 계정 중에는 언팔 대신 계정을 비활성화·삭제한 경우도 있어요. 프로필을 눌러 확인해 보세요.',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+          Text(
+            l10n.compareDisappearedNote,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
       ),
@@ -96,8 +97,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final change = diff.followerChange;
-    final changeText = change == 0 ? '변화 없음' : (change > 0 ? '+$change' : '$change');
+    final changeText = change == 0 ? l10n.compareNoChange : (change > 0 ? '+$change' : '$change');
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -109,19 +111,19 @@ class _Header extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${formatSnapshotDate(diff.older)} → ${formatSnapshotDate(diff.newer)}',
+            '${formatSnapshotDate(diff.older, l10n)} → ${formatSnapshotDate(diff.newer, l10n)}',
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          const Text('날짜는 인스타그램에서 파일을 내보낸 날이에요.',
-              style: TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(l10n.compareExportDateNote,
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 12),
           Row(
             children: [
-              _Stat(label: '팔로워', value: '${diff.older.followers.length} → ${diff.newer.followers.length}'),
-              _Stat(label: '증감', value: changeText),
-              _Stat(label: '언팔', value: '${diff.lostFollowers.length}', color: Colors.red),
-              _Stat(label: '새 팔로워', value: '${diff.newFollowers.length}', color: Colors.green.shade700),
+              _Stat(label: l10n.commonFollowers, value: '${diff.older.followers.length} → ${diff.newer.followers.length}'),
+              _Stat(label: l10n.compareChange, value: changeText),
+              _Stat(label: l10n.compareLost, value: '${diff.lostFollowers.length}', color: Colors.red),
+              _Stat(label: l10n.commonNewFollowers, value: '${diff.newFollowers.length}', color: Colors.green.shade700),
             ],
           ),
         ],

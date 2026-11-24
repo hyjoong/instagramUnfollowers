@@ -436,8 +436,8 @@ ${l10n.historyShareFooter}
                 children: [
                   Text(
                     snapshot.dateFromFileName
-                        ? _l10n.historyExportedOn(formatSnapshotDate(snapshot))
-                        : formatSnapshotDate(snapshot),
+                        ? _l10n.historyExportedOn(formatSnapshotDate(snapshot, _l10n))
+                        : formatSnapshotDate(snapshot, _l10n),
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
