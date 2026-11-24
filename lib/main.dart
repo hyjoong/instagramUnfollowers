@@ -92,7 +92,9 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   late final _interstitial = AdMobInterstitialController(
     adUnitId: _adConfig.interstitialAdUnitId,
   );
-  final _reminder = RecheckReminderController();
+  late final _reminder = RecheckReminderController(
+    locale: () => widget.localeStore.value,
+  );
   WebViewService? _webViewService;
   FirebaseService? _firebaseService;
   FileHandler? _fileHandler;
@@ -108,8 +110,13 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   void initState() {
     super.initState();
     _adConsent.addListener(_syncInterstitialConsent);
+    widget.localeStore.addListener(_onLocaleChanged);
     _checkOnboardingStatus();
   }
+
+  // Notification copy is fixed when scheduled; re-schedule it in the new
+  // language.
+  void _onLocaleChanged() => unawaited(_reminder.onLocaleChanged());
 
   void _syncInterstitialConsent() {
     _interstitial.updateConsent(_adConfig.isTest || _adConsent.canRequestAds);
@@ -323,6 +330,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   @override
   void dispose() {
     _adConsent.removeListener(_syncInterstitialConsent);
+    widget.localeStore.removeListener(_onLocaleChanged);
     _interstitial.dispose();
     _adConsent.dispose();
     super.dispose();
