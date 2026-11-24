@@ -84,7 +84,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _showAdPrivacyOptions() async {
     final error = await widget.adConsent?.showPrivacyOptions();
     if (!mounted || error == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(error.message(_l10n))));
   }
 
   @override

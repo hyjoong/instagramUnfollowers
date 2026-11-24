@@ -198,8 +198,7 @@ void main() {
     backend.privacyFormError = StateError('private SDK diagnostics');
 
     final message = await controller.showPrivacyOptions();
-    expect(message, contains('잠시 후 다시 시도'));
-    expect(message, isNot(contains('private SDK diagnostics')));
+    expect(message, PrivacyOptionsError.openFailed);
     expect(controller.canRequestAds, isTrue);
     expect(controller.isBusy, isFalse);
   });

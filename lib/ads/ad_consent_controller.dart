@@ -3,6 +3,26 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import '../l10n/gen/app_localizations.dart';
+
+/// Why the ad privacy options could not be shown. The settings screen turns
+/// it into text in the app language.
+enum PrivacyOptionsError {
+  notReady,
+  preparing,
+  nothingToChange,
+  openFailed,
+  statusFailed;
+
+  String message(AppLocalizations l10n) => switch (this) {
+        notReady => l10n.adConsentNotReady,
+        preparing => l10n.adConsentPreparing,
+        nothingToChange => l10n.adConsentNothingToChange,
+        openFailed => l10n.adConsentOpenFailed,
+        statusFailed => l10n.adConsentStatusFailed,
+      };
+}
+
 /// SDK boundary so consent ordering and failure paths can be tested without ads.
 abstract class AdConsentBackend {
   Future<void> requestConsentInfoUpdate();
@@ -63,7 +83,7 @@ class AdConsentController extends ChangeNotifier {
 
   final AdConsentBackend _backend;
   Future<void>? _initialization;
-  Future<String?>? _privacyOperation;
+  Future<PrivacyOptionsError?>? _privacyOperation;
   bool _canRequestAds = false;
   bool _privacyOptionsRequired = false;
   bool _isBusy = false;
@@ -109,18 +129,19 @@ class AdConsentController extends ChangeNotifier {
   }
 
   /// Temporarily removes ad eligibility while the user changes privacy choices.
-  /// Repeated taps share the same operation; failures become user-facing text.
-  Future<String?> showPrivacyOptions() {
-    if (_disposed) return Future.value('화면을 다시 연 뒤 시도해 주세요.');
+  /// Repeated taps share the same operation; failures are reported as a
+  /// [PrivacyOptionsError] the UI can show.
+  Future<PrivacyOptionsError?> showPrivacyOptions() {
+    if (_disposed) return Future.value(PrivacyOptionsError.notReady);
     if (_privacyOperation != null) return _privacyOperation!;
     if (_isBusy || _initialization == null) {
-      return Future.value('광고 개인정보 설정을 준비하고 있어요. 잠시 후 다시 시도해 주세요.');
+      return Future.value(PrivacyOptionsError.preparing);
     }
     if (!_privacyOptionsRequired) {
-      return Future.value('현재 변경할 광고 개인정보 설정이 없어요.');
+      return Future.value(PrivacyOptionsError.nothingToChange);
     }
 
-    final completion = Completer<String?>();
+    final completion = Completer<PrivacyOptionsError?>();
     _privacyOperation = completion.future;
     _canRequestAds = false;
     _isBusy = true;
@@ -129,19 +150,21 @@ class AdConsentController extends ChangeNotifier {
     return completion.future;
   }
 
-  Future<void> _showPrivacyOptions(Completer<String?> completion) async {
-    String? message;
+  Future<void> _showPrivacyOptions(
+    Completer<PrivacyOptionsError?> completion,
+  ) async {
+    PrivacyOptionsError? message;
     try {
       if (_disposed) return;
       try {
         await _backend.showPrivacyOptionsForm();
       } catch (_) {
-        message = '개인정보 설정을 열지 못했어요. 잠시 후 다시 시도해 주세요.';
+        message = PrivacyOptionsError.openFailed;
       }
       if (!_disposed) {
         final refreshed = await _refreshSdkState();
         if (!refreshed) {
-          message ??= '개인정보 설정 상태를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.';
+          message ??= PrivacyOptionsError.statusFailed;
         }
       }
     } finally {

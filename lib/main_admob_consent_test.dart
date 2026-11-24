@@ -187,7 +187,7 @@ class _ConsentTestScreenState extends State<_ConsentTestScreen> {
 
   Future<void> _showPrivacyOptions() async {
     final message = await _consent.showPrivacyOptions();
-    if (message != null) _log(message);
+    if (message != null) _log('privacy options: ${message.name}');
   }
 
   @override
