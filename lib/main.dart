@@ -85,6 +85,8 @@ class TrackFollowsPage extends StatefulWidget {
 }
 
 class _TrackFollowsPageState extends State<TrackFollowsPage> {
+  AppLocalizations get _l10n => AppLocalizations.of(context);
+
   final _adConfig = AdMobConfig.current;
   final _adConsent = AdConsentController();
   late final _interstitial = AdMobInterstitialController(
@@ -180,8 +182,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('파일 선택에 실패했습니다'),
+          SnackBar(
+            content: Text(_l10n.mainFilePickFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -221,10 +223,10 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         // 하단 배너 광고를 가리지 않도록 그 위에 띄운다.
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 96),
-        content: const Text(
-          '누가 나를 언팔했는지는 다음 분석 때 알 수 있어요. 2주 뒤에 알려 드릴까요?',
+        content: Text(
+          _l10n.mainReminderPrompt,
         ),
-        action: SnackBarAction(label: '알림 받기', onPressed: _enableReminder),
+        action: SnackBarAction(label: _l10n.mainReminderAction, onPressed: _enableReminder),
       ),
     );
   }
@@ -235,22 +237,22 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     unawaited(showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const PopScope(
+      builder: (context) => PopScope(
         canPop: false,
         child: Center(
           child: Card(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  SizedBox(width: 16),
-                  Text('분석 결과를 준비하고 있어요'),
+                  const SizedBox(width: 16),
+                  Text(_l10n.mainPreparingResults),
                 ],
               ),
             ),
@@ -271,8 +273,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 96),
         content: Text(
           enabled
-              ? '2주 뒤에 알려 드릴게요. 설정에서 끌 수 있어요.'
-              : '알림 권한이 꺼져 있어요. 기기 설정에서 알림을 허용해 주세요.',
+              ? _l10n.mainReminderEnabled
+              : _l10n.commonNotificationPermissionOff,
         ),
       ),
     );
@@ -420,21 +422,21 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFFEC4899),
         unselectedItemColor: Colors.grey,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_outlined),
-            activeIcon: Icon(Icons.analytics),
-            label: '분석',
+            icon: const Icon(Icons.analytics_outlined),
+            activeIcon: const Icon(Icons.analytics),
+            label: _l10n.navAnalyze,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: '히스토리',
+            icon: const Icon(Icons.history_outlined),
+            activeIcon: const Icon(Icons.history),
+            label: _l10n.navHistory,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: '설정',
+            icon: const Icon(Icons.settings_outlined),
+            activeIcon: const Icon(Icons.settings),
+            label: _l10n.navSettings,
           ),
         ],
       ),
@@ -445,16 +447,16 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('앱 종료'),
-            content: const Text('앱을 종료하시겠습니까?'),
+            title: Text(_l10n.mainExitTitle),
+            content: Text(_l10n.mainExitMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('취소'),
+                child: Text(_l10n.commonCancel),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('종료'),
+                child: Text(_l10n.mainExitConfirm),
               ),
             ],
           ),
