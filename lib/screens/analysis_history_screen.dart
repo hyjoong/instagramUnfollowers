@@ -8,6 +8,8 @@ import '../history/history_compare.dart';
 import 'package:share_plus/share_plus.dart';
 import '../ads/ad_consent_controller.dart';
 import '../ads/admob_native_card.dart';
+import 'package:intl/intl.dart';
+import '../l10n/gen/app_localizations.dart';
 
 class AnalysisHistoryScreen extends StatefulWidget {
   const AnalysisHistoryScreen({
@@ -36,6 +38,8 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
   // 각 기록과 그 직전(같은 계정) 기록의 비교 결과. 직전 기록이 없으면 null
   List<HistoryDiff?> _previousDiffs = [];
   String _loadedSignature = '';
+
+  AppLocalizations get _l10n => AppLocalizations.of(context);
   bool _isLoading = true;
   Timer? _refreshTimer;
   // 두 기록 비교 모드에서 고른 기록 id
@@ -143,7 +147,7 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
     if (picked.length != 2) return;
     if (!looksLikeSameAccount(picked[0], picked[1])) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('두 기록의 팔로워가 거의 겹치지 않아요. 같은 계정의 기록인지 확인해 주세요.')),
+        SnackBar(content: Text(_l10n.historyLowOverlap)),
       );
       return;
     }
@@ -154,18 +158,18 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('분석 기록 삭제'),
-        content: const Text('이 분석 기록을 삭제하시겠습니까?'),
+        title: Text(_l10n.historyDeleteTitle),
+        content: Text(_l10n.historyDeleteMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
+            child: Text(_l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              '삭제',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              _l10n.commonDelete,
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -187,17 +191,17 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('분석 기록이 삭제되었습니다'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(_l10n.historyDeleted),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('삭제에 실패했습니다'),
+          SnackBar(
+            content: Text(_l10n.historyDeleteFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -208,29 +212,31 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen>
   String _formatDate(String timestamp) {
     try {
       final date = DateTime.parse(timestamp).toLocal();
-      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      final locale = Localizations.localeOf(context).toLanguageTag();
+      return DateFormat.yMMMd(locale).add_Hm().format(date);
     } catch (e) {
       return timestamp;
     }
   }
 
   void _shareAnalysis(AnalysisResult result) {
+    final l10n = _l10n;
     final analysisText = '''
-인스타그램 분석 결과
+${l10n.historyShareSubject}
 
-📊 분석 요약:
-• 언팔로워: ${result.unfollowersCount}
-• 팬: ${result.fansCount}
-• 맞팔: ${result.mutualCount}
-• 총 팔로워: ${result.totalFollowers}
-• 총 팔로잉: ${result.totalFollowing}
+📊 ${l10n.statsSummary}:
+• ${l10n.commonUnfollowers}: ${result.unfollowersCount}
+• ${l10n.commonFans}: ${result.fansCount}
+• ${l10n.commonMutual}: ${result.mutualCount}
+• ${l10n.commonTotalFollowers}: ${result.totalFollowers}
+• ${l10n.commonTotalFollowing}: ${result.totalFollowing}
 
-📅 분석 날짜: ${_formatDate(result.timestamp)}
+📅 ${l10n.statsAnalysisDate}: ${_formatDate(result.timestamp)}
 
-TrackFollows 앱으로 생성됨
+${l10n.historyShareFooter}
 ''';
 
-    Share.share(analysisText, subject: '인스타그램 분석 결과');
+    Share.share(analysisText, subject: l10n.historyShareSubject);
   }
 
   @override
@@ -239,9 +245,9 @@ TrackFollows 앱으로 생성됨
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text(
-          '분석 히스토리',
-          style: TextStyle(
+        title: Text(
+          _l10n.historyTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -256,7 +262,7 @@ TrackFollows 앱으로 생성됨
                 _selecting = !_selecting;
                 _selectedIds.clear();
               }),
-              child: Text(_selecting ? '취소' : '두 기록 비교',
+              child: Text(_selecting ? _l10n.commonCancel : _l10n.historyCompare,
                   style: const TextStyle(color: Color(0xFFEC4899))),
             ),
         ],
@@ -277,8 +283,8 @@ TrackFollows 앱으로 생성됨
                   ),
                   onPressed: _selectedIds.length == 2 ? _compareSelected : null,
                   child: Text(_selectedIds.length == 2
-                      ? '고른 두 기록 비교하기'
-                      : '비교할 기록 두 개를 골라 주세요 (${_selectedIds.length}/2)'),
+                      ? _l10n.historyCompareSelected
+                      : _l10n.historyCompareHint('${_selectedIds.length}')),
                 ),
               ),
             )
@@ -305,18 +311,18 @@ TrackFollows 앱으로 생성됨
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            '분석 히스토리가 없습니다',
-            style: TextStyle(
+          Text(
+            _l10n.historyEmptyTitle,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            '분석 결과가 여기에 표시됩니다',
-            style: TextStyle(
+          Text(
+            _l10n.historyEmptyBody,
+            style: const TextStyle(
               fontSize: 16,
               color: Colors.grey,
             ),
@@ -430,7 +436,7 @@ TrackFollows 앱으로 생성됨
                 children: [
                   Text(
                     snapshot.dateFromFileName
-                        ? '${formatSnapshotDate(snapshot)} 내보내기'
+                        ? _l10n.historyExportedOn(formatSnapshotDate(snapshot))
                         : formatSnapshotDate(snapshot),
                     style: const TextStyle(
                       fontSize: 17,
@@ -440,14 +446,14 @@ TrackFollows 앱으로 생성됨
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '팔로워 ${result.totalFollowers} · 팔로잉 ${result.totalFollowing} · 언팔로워 ${result.unfollowersCount}',
+                    _l10n.historyCounts('${result.totalFollowers}', '${result.totalFollowing}', '${result.unfollowersCount}'),
                     style: const TextStyle(fontSize: 13, color: Colors.black54),
                   ),
                   const SizedBox(height: 8),
                   _buildChangeChip(diff),
                   const SizedBox(height: 6),
                   Text(
-                    '분석: ${_formatDate(result.date)}',
+                    _l10n.historyAnalyzedOn(_formatDate(result.date)),
                     style: const TextStyle(fontSize: 11, color: Colors.grey),
                   ),
                 ],
@@ -468,12 +474,12 @@ TrackFollows 앱으로 생성됨
                     _deleteHistoryItem(index);
                   }
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'stats', child: Text('통계 보기')),
-                  PopupMenuItem(value: 'share', child: Text('공유')),
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 'stats', child: Text(_l10n.historyViewStats)),
+                  PopupMenuItem(value: 'share', child: Text(_l10n.historyShare)),
                   PopupMenuItem(
                     value: 'delete',
-                    child: Text('삭제', style: TextStyle(color: Colors.red)),
+                    child: Text(_l10n.commonDelete, style: const TextStyle(color: Colors.red)),
                   ),
                 ],
               ),
@@ -486,8 +492,8 @@ TrackFollows 앱으로 생성됨
   // 직전 기록과 비교한 변화. 눌러서 자세히 볼 수 있다는 걸 함께 보여 줍니다.
   Widget _buildChangeChip(HistoryDiff? diff) {
     if (diff == null) {
-      return const Text('첫 기록 · 다음 분석부터 변화를 비교해요',
-          style: TextStyle(fontSize: 12, color: Colors.grey));
+      return Text(_l10n.historyFirstRecord,
+          style: const TextStyle(fontSize: 12, color: Colors.grey));
     }
     final lost = diff.lostFollowers.length;
     final gained = diff.newFollowers.length;
@@ -502,16 +508,16 @@ TrackFollows 앱으로 생성됨
         mainAxisSize: MainAxisSize.min,
         children: [
           if (noChange)
-            const Text('직전 기록과 팔로워 변화 없음',
-                style: TextStyle(fontSize: 12, color: Colors.black54))
+            Text(_l10n.historyNoChange,
+                style: const TextStyle(fontSize: 12, color: Colors.black54))
           else ...[
-            const Text('직전 기록 대비  ',
-                style: TextStyle(fontSize: 12, color: Colors.black54)),
-            Text('언팔 $lost',
+            Text('${_l10n.historyVsPrevious}  ',
+                style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            Text(_l10n.historyLostCount('$lost'),
                 style: const TextStyle(
                     fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red)),
             const Text('  ·  ', style: TextStyle(fontSize: 12, color: Colors.black38)),
-            Text('새 팔로워 $gained',
+            Text(_l10n.historyGainedCount('$gained'),
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
