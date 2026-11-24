@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -9,9 +10,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'ads/admob_config.dart';
+import 'l10n/app_locale.dart';
 
 class WebViewService {
+  /// Web origin; development builds point it elsewhere with
+  /// `--dart-define=TRACKFOLLOWS_URL=...`. The language path goes after it.
+  static const webOrigin = String.fromEnvironment(
+    'TRACKFOLLOWS_URL',
+    defaultValue: 'https://trackfollows.com',
+  );
+
   WebViewController? controller;
+  AppLocaleStore? _localeStore;
   final FileHandler fileHandler = FileHandler();
   late FlutterLocalNotificationsPlugin notificationsPlugin;
   final bool _isWebViewReady = false;
@@ -23,7 +33,9 @@ class WebViewService {
     Function()? onFilePickRequested,
     Function()? onResetComplete,
     Function()? onAnalysisComplete,
+    AppLocaleStore? localeStore,
   }) async {
+    _localeStore = localeStore;
     this.onFilePickRequested = onFilePickRequested;
     this.onResetComplete = onResetComplete;
     this.onAnalysisComplete = onAnalysisComplete;
@@ -43,6 +55,7 @@ class WebViewService {
             // 페이지 로딩 시작
           },
           onPageFinished: (String url) async {
+            _rememberWebLocale(url);
             // 페이지 로딩 완료 후 Flutter 식별자 재설정
             await controller?.runJavaScript('''
               if (!window.isFlutterWebView) {
@@ -118,11 +131,9 @@ class WebViewService {
       );
     }
 
-    const webUrl = String.fromEnvironment(
-      'TRACKFOLLOWS_URL',
-      defaultValue: 'https://trackfollows.com',
+    await controller!.loadRequest(
+      Uri.parse(webUrlFor(webOrigin, localeStore?.value ?? fallbackLocale)),
     );
-    await controller!.loadRequest(Uri.parse(webUrl));
 
     // Android에서 <input type="file"> 지원
     if (Platform.isAndroid) {
@@ -184,6 +195,23 @@ class WebViewService {
       }
     }
     return result.toList();
+  }
+
+  /// When the user switches language on the web (another `/{locale}` path on
+  /// our origin), keep that choice for the next launch and the native screens.
+  void _rememberWebLocale(String url) {
+    final store = _localeStore;
+    final uri = Uri.tryParse(url);
+    if (store == null || uri == null) return;
+    if (uri.host != Uri.parse(webOrigin).host) return;
+    final webLocale = localeFromWebUrl(url);
+    if (webLocale != store.value) unawaited(store.select(webLocale));
+  }
+
+  /// Reopens the web app in [locale] (used when the language is changed in
+  /// the app settings).
+  Future<void> reloadForLocale(Locale locale) async {
+    await controller?.loadRequest(Uri.parse(webUrlFor(webOrigin, locale)));
   }
 
   void _initializeNotifications() {

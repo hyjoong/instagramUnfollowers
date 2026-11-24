@@ -17,6 +17,7 @@ import 'ads/admob_config.dart';
 import 'ads/admob_interstitial.dart';
 import 'ads/ad_consent_controller.dart';
 import 'reminders/recheck_reminder.dart';
+import 'l10n/app_locale.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,11 +29,21 @@ void main() async {
     debugPrint('Firebase initialization failed, but app will continue: $e');
   }
 
-  runApp(const MyApp());
+  // Resolve the app language before the first frame so the WebView and the
+  // native screens start in the same language.
+  final prefs = await SharedPreferences.getInstance();
+  final localeStore = await AppLocaleStore.load(
+    prefs,
+    WidgetsBinding.instance.platformDispatcher.locales,
+  );
+
+  runApp(MyApp(localeStore: localeStore));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.localeStore});
+
+  final AppLocaleStore localeStore;
 
   @override
   Widget build(BuildContext context) {
@@ -42,13 +53,15 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFEC4899)),
         useMaterial3: true,
       ),
-      home: const TrackFollowsPage(),
+      home: TrackFollowsPage(localeStore: localeStore),
     );
   }
 }
 
 class TrackFollowsPage extends StatefulWidget {
-  const TrackFollowsPage({super.key});
+  const TrackFollowsPage({super.key, required this.localeStore});
+
+  final AppLocaleStore localeStore;
 
   @override
   State<TrackFollowsPage> createState() => _TrackFollowsPageState();
@@ -80,8 +93,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   }
 
   void _syncInterstitialConsent() {
-    _interstitial
-        .updateConsent(_adConfig.isTest || _adConsent.canRequestAds);
+    _interstitial.updateConsent(_adConfig.isTest || _adConsent.canRequestAds);
   }
 
   Future<void> _checkOnboardingStatus() async {
@@ -109,6 +121,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         onFilePickRequested: _handleFileSelection,
         onResetComplete: _onResetComplete,
         onAnalysisComplete: _onAnalysisComplete,
+        localeStore: widget.localeStore,
       );
 
       if (!mounted) return;
@@ -175,11 +188,10 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   }
 
   Future<void> _afterAnalysis({required bool onAnalysisTab}) async {
-    final adShown =
-        onAnalysisTab &&
-            await _interstitial.onAnalysisCompleted(
-              beforeShow: _showAdLeadIn,
-            );
+    final adShown = onAnalysisTab &&
+        await _interstitial.onAnalysisCompleted(
+          beforeShow: _showAdLeadIn,
+        );
     await _reminder.onAnalysisCompleted();
     // 광고가 뜬 분석에는 권유를 겹치지 않는다.
     if (adShown || !onAnalysisTab || !mounted) return;
