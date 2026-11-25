@@ -516,5 +516,5 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get faqDataSecurityAnswer =>
-      'Deine Instagram-Originaldateien, Kontonamen und Followerlisten werden für die Analyse nicht an einen Server gesendet. Für den Vergleich mit deiner letzten Analyse werden die Benutzernamen von Followern und Gefolgten nur auf diesem Gerät (Browser oder App) gespeichert; du kannst sie jederzeit über „Verlauf löschen“ im Ergebnis löschen. Informationen zur Nutzungs- und Fehlerdiagnose sowie zu Werbediensten findest du in der Datenschutzerklärung.';
+      'Ihre Instagram-Originaldateien, Kontonamen und Followerlisten werden für die Analyse nicht an einen Server gesendet. Für den Vergleich mit Ihrer letzten Analyse werden die Benutzernamen von Followern und Gefolgten nur auf diesem Gerät (Browser oder App) gespeichert; Sie können sie jederzeit über „Verlauf löschen“ im Ergebnis löschen. Informationen zur Nutzungs- und Fehlerdiagnose sowie zu Werbediensten finden Sie in der Datenschutzerklärung.';
 }
