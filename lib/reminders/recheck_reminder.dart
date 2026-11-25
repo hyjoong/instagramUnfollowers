@@ -122,6 +122,13 @@ class RecheckReminderController {
 
   ReminderText get _text => ReminderText.of(lookupAppLocalizations(_locale()));
 
+  final _changes = ValueNotifier<int>(0);
+
+  /// Fires after the reminder is turned on or off, wherever that happened
+  /// (the prompt after an analysis or the settings switch), so screens that
+  /// show the setting can read [isEnabled] again.
+  Listenable get changes => _changes;
+
   Future<void> _schedule(DateTime when) async {
     await _backend.schedule(when, _text);
     await (await _prefs()).setInt(dueKey, when.millisecondsSinceEpoch);
@@ -152,11 +159,13 @@ class RecheckReminderController {
       return false;
     }
     await (await _prefs()).setBool(enabledKey, true);
+    _changes.value++;
     return true;
   }
 
   Future<void> disable() async {
     await (await _prefs()).setBool(enabledKey, false);
+    _changes.value++;
     try {
       await _backend.cancel();
     } catch (error) {
