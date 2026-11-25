@@ -20,6 +20,7 @@ import 'ads/ad_consent_controller.dart';
 import 'reminders/recheck_reminder.dart';
 import 'review/review_prompt.dart';
 import 'l10n/app_locale.dart';
+import 'l10n/platform_app_locale.dart';
 import 'l10n/gen/app_localizations.dart';
 
 void main() async {
@@ -40,7 +41,15 @@ void main() async {
     WidgetsBinding.instance.platformDispatcher.locales,
   );
 
-  WidgetsBinding.instance.addObserver(DeviceLocaleObserver(localeStore));
+  // Android 13+: the per-app language in the system settings and the one
+  // picked in the app are the same setting, whichever was changed last wins.
+  final platformSync = PlatformLocaleSync.create(localeStore, prefs);
+  await platformSync?.pull();
+
+  WidgetsBinding.instance.addObserver(DeviceLocaleObserver(
+    localeStore,
+    onChanged: () => unawaited(platformSync?.pull()),
+  ));
 
   runApp(MyApp(localeStore: localeStore));
 }
@@ -117,8 +126,12 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   }
 
   // Notification copy is fixed when scheduled; re-schedule it in the new
-  // language.
-  void _onLocaleChanged() => unawaited(_reminder.onLocaleChanged());
+  // language. The WebView follows too, whether the change came from the app
+  // settings, the device or the OS per-app language.
+  void _onLocaleChanged() {
+    unawaited(_reminder.onLocaleChanged());
+    unawaited(_webViewService?.showLocale(widget.localeStore.value));
+  }
 
   void _syncInterstitialConsent() {
     _interstitial.updateConsent(_adConfig.isTest || _adConsent.canRequestAds);
@@ -239,7 +252,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         content: Text(
           _l10n.mainReminderPrompt,
         ),
-        action: SnackBarAction(label: _l10n.mainReminderAction, onPressed: _enableReminder),
+        action: SnackBarAction(
+            label: _l10n.mainReminderAction, onPressed: _enableReminder),
       ),
     );
   }
@@ -425,8 +439,6 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
           SettingsScreen(
             reminder: _reminder,
             localeStore: widget.localeStore,
-            onLocaleSelected: (locale) =>
-                unawaited(_webViewService?.reloadForLocale(locale)),
             adConsent:
                 _adConfig.enabled && !_adConfig.isTest ? _adConsent : null,
           ),

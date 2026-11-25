@@ -214,9 +214,16 @@ class WebViewService {
     if (webLocale != store.value) unawaited(store.select(webLocale));
   }
 
-  /// Reopens the web app in [locale] (used when the language is changed in
-  /// the app settings).
-  Future<void> reloadForLocale(Locale locale) async {
+  /// Reopens the web app in [locale] unless the page is already in it (a
+  /// switch made on the web itself leaves the page where it is).
+  Future<void> showLocale(Locale locale) async {
+    final current = await controller?.currentUrl();
+    final uri = current == null ? null : Uri.tryParse(current);
+    if (uri != null &&
+        uri.host == Uri.parse(webOrigin).host &&
+        localeFromWebUrl(current!) == locale) {
+      return;
+    }
     await controller?.loadRequest(Uri.parse(webUrlFor(webOrigin, locale)));
   }
 

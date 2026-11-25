@@ -117,14 +117,17 @@ String legalUrlFor(String origin, Locale locale, String path) {
 
 /// Keeps [AppLocaleStore] in sync when the device languages change while the
 /// app is running (only matters when the user has not picked a language).
+/// [onChanged] runs afterwards, e.g. to read the OS per-app language.
 class DeviceLocaleObserver with WidgetsBindingObserver {
-  DeviceLocaleObserver(this.store);
+  DeviceLocaleObserver(this.store, {this.onChanged});
 
   final AppLocaleStore store;
+  final VoidCallback? onChanged;
 
   @override
   void didChangeLocales(List<Locale>? locales) {
     if (locales != null) store.updateDeviceLocales(locales);
+    onChanged?.call();
   }
 }
 

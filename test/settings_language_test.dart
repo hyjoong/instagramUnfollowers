@@ -17,12 +17,11 @@ void main() {
     );
   });
 
-  testWidgets('picking a language saves it and reloads in that language',
+  testWidgets('picking a language saves it and switches the app to it',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final store = await AppLocaleStore.load(prefs, const [Locale('en')]);
-    final reloaded = <Locale>[];
 
     await tester.pumpWidget(ValueListenableBuilder<Locale>(
       valueListenable: store,
@@ -30,10 +29,7 @@ void main() {
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: SettingsScreen(
-          localeStore: store,
-          onLocaleSelected: reloaded.add,
-        ),
+        home: SettingsScreen(localeStore: store),
       ),
     ));
     await tester.pumpAndSettle();
@@ -45,7 +41,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(prefs.getString(AppLocaleStore.prefsKey), 'ja');
-    expect(reloaded, const [Locale('ja')]);
+    expect(store.value, const Locale('ja'));
     final ja = lookupAppLocalizations(const Locale('ja'));
     expect(find.text(ja.settingsTitle), findsOneWidget);
     expect(find.text('日本語'), findsOneWidget);
