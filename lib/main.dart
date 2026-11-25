@@ -41,7 +41,7 @@ void main() async {
     WidgetsBinding.instance.platformDispatcher.locales,
   );
 
-  // Android 13+: the per-app language in the system settings and the one
+  // Android 13+ and iOS: the per-app language in the system settings and the one
   // picked in the app are the same setting, whichever was changed last wins.
   final platformSync = PlatformLocaleSync.create(localeStore, prefs);
   await platformSync?.pull();

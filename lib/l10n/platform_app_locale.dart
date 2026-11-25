@@ -8,7 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_locale.dart';
 
-/// The OS-level per-app language (Android 13+ Settings › Apps › Language).
+/// The OS-level per-app language (Android 13+ Settings › Apps › Language,
+/// iOS Settings › TrackFollows › Language).
 abstract interface class PlatformAppLocale {
   /// Language tag set for this app in the OS, or null when none is set.
   Future<String?> read();
@@ -17,7 +18,7 @@ abstract interface class PlatformAppLocale {
   Future<void> write(String? code);
 }
 
-class AndroidPlatformAppLocale implements PlatformAppLocale {
+class ChannelPlatformAppLocale implements PlatformAppLocale {
   static const _channel = MethodChannel('trackfollows/app_locale');
 
   @override
@@ -42,13 +43,13 @@ class PlatformLocaleSync {
   final PlatformAppLocale platform;
   final SharedPreferences prefs;
 
-  /// Android 13+ only; null elsewhere.
+  /// Android 13+ and iOS; null elsewhere (older Android answers null).
   static PlatformLocaleSync? create(
     AppLocaleStore store,
     SharedPreferences prefs,
   ) {
-    if (kIsWeb || !Platform.isAndroid) return null;
-    return PlatformLocaleSync(store, AndroidPlatformAppLocale(), prefs);
+    if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return null;
+    return PlatformLocaleSync(store, ChannelPlatformAppLocale(), prefs);
   }
 
   /// Applies a change made in the OS settings, or pushes the app's choice to
