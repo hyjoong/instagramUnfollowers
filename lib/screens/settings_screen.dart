@@ -36,6 +36,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadAppInfo();
     _loadReminder();
+    // 설정 탭은 앱을 켤 때 한 번 만들어져 계속 살아 있어서, 분석 후 권유에서
+    // 켠 것도 여기서 다시 읽어야 스위치가 맞게 보인다.
+    widget.reminder?.changes.addListener(_loadReminder);
+  }
+
+  @override
+  void dispose() {
+    widget.reminder?.changes.removeListener(_loadReminder);
+    super.dispose();
   }
 
   Future<void> _loadReminder() async {
