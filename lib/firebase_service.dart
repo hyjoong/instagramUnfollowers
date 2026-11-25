@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class FirebaseService {
@@ -14,7 +15,7 @@ class FirebaseService {
       _isInitialized = true;
     } catch (e) {
       // Firebase 초기화 실패 시에도 앱이 계속 실행되도록 함
-      print('Firebase initialization failed: $e');
+      debugPrint('Firebase initialization failed: $e');
     }
   }
 
@@ -55,7 +56,7 @@ class FirebaseService {
           _firebaseMessagingBackgroundHandler);
     } catch (e) {
       // 메시징 초기화 실패 시에도 앱이 계속 실행되도록 함
-      print('Firebase messaging initialization failed: $e');
+      debugPrint('Firebase messaging initialization failed: $e');
     }
   }
 }

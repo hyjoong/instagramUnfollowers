@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/gen/app_localizations.dart';
+
 class ErrorScreen extends StatelessWidget {
   final String errorMessage;
   final VoidCallback? onRetry;
@@ -12,6 +14,7 @@ class ErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -38,9 +41,9 @@ class ErrorScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // 에러 제목
-              const Text(
-                '연결 오류',
-                style: TextStyle(
+              Text(
+                l10n.errorTitle,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
@@ -77,9 +80,9 @@ class ErrorScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
-                    '다시 시도',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.commonRetry,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

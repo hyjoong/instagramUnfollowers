@@ -1,22 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../ads/ad_consent_controller.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_locale.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../reminders/recheck_reminder.dart';
+import '../webview_service.dart';
 import 'faq_screen.dart';
-import 'terms_screen.dart';
-import 'privacy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, this.adConsent, this.reminder});
+  const SettingsScreen({
+    super.key,
+    this.adConsent,
+    this.reminder,
+    this.localeStore,
+  });
 
   final AdConsentController? adConsent;
   final RecheckReminderController? reminder;
+  final AppLocaleStore? localeStore;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  AppLocalizations get _l10n => AppLocalizations.of(context);
+
   String _appVersion = '';
   String _buildNumber = '';
   bool _reminderEnabled = false;
@@ -41,8 +51,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await reminder.disable();
     } else if (!await reminder.enable()) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('알림 권한이 꺼져 있어요. 기기 설정에서 알림을 허용해 주세요.'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_l10n.commonNotificationPermissionOff),
       ));
       return;
     }
@@ -59,10 +69,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  /// Legal documents live on the web only, so they stay in one place.
+  Future<void> _openLegalPage(String path) async {
+    final locale = widget.localeStore?.value ?? fallbackLocale;
+    final url = Uri.parse(legalUrlFor(WebViewService.webOrigin, locale, path));
+    final opened = await launchUrl(url, mode: LaunchMode.externalApplication)
+        .catchError((_) => false);
+    if (opened || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_l10n.settingsOpenLinkFailed)),
+    );
+  }
+
+  Future<void> _pickLanguage() async {
+    final store = widget.localeStore;
+    if (store == null) return;
+    // '' stands for "follow the device language".
+    final current = store.savedCode ?? '';
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+      ),
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final code in ['', ...supportedLanguageCodes])
+              ListTile(
+                title: Text(code.isEmpty
+                    ? _l10n.settingsLanguageSystem
+                    : languageNativeNames[code]!),
+                trailing: code == current
+                    ? const Icon(Icons.check, color: Color(0xFFEC4899))
+                    : null,
+                onTap: () => Navigator.of(context).pop(code),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || picked == current) return;
+    await store.select(picked.isEmpty ? null : Locale(picked));
+  }
+
   Future<void> _showAdPrivacyOptions() async {
     final error = await widget.adConsent?.showPrivacyOptions();
     if (!mounted || error == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(error.message(_l10n))));
   }
 
   @override
@@ -70,9 +128,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text(
-          '설정',
-          style: TextStyle(
+        title: Text(
+          _l10n.settingsTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -87,7 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (widget.reminder != null) ...[
-              _buildSectionTitle('알림'),
+              _buildSectionTitle(_l10n.settingsNotificationsSection),
               const SizedBox(height: 12),
               SwitchListTile(
                 value: _reminderEnabled,
@@ -97,15 +155,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                title: const Text('다시 확인 알림'),
-                subtitle: const Text('분석하고 2주 뒤에 새 파일로 확인하라고 알려 드려요'),
+                title: Text(_l10n.settingsRecheckTitle),
+                subtitle: Text(_l10n.settingsRecheckBody),
               ),
               const SizedBox(height: 24),
             ],
-            _buildSectionTitle('지원 및 법적 고지'),
+            if (widget.localeStore != null) ...[
+              _buildSectionTitle(_l10n.settingsLanguage),
+              const SizedBox(height: 12),
+              _buildButton(
+                widget.localeStore!.savedCode == null
+                    ? _l10n.settingsLanguageSystem
+                    : languageNativeNames[
+                        widget.localeStore!.value.languageCode]!,
+                Icons.language,
+                _pickLanguage,
+              ),
+              const SizedBox(height: 24),
+            ],
+            _buildSectionTitle(_l10n.settingsSupportSection),
             const SizedBox(height: 12),
             _buildButton(
-              '자주 묻는 질문',
+              _l10n.settingsFaq,
               Icons.help_outline,
               () => Navigator.push(
                 context,
@@ -114,21 +185,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 8),
             _buildButton(
-              '이용약관',
+              _l10n.settingsTerms,
               Icons.description_outlined,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const TermsScreen()),
-              ),
+              () => _openLegalPage('/terms'),
             ),
             const SizedBox(height: 8),
             _buildButton(
-              '개인정보 처리방침',
+              _l10n.settingsPrivacy,
               Icons.privacy_tip_outlined,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PrivacyScreen()),
-              ),
+              () => _openLegalPage('/privacy'),
             ),
             if (widget.adConsent != null)
               AnimatedBuilder(
@@ -141,7 +206,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   return Column(children: [
                     const SizedBox(height: 8),
                     _buildButton(
-                      '광고 개인정보 설정',
+                      _l10n.settingsAdPrivacy,
                       Icons.tune,
                       consent.isBusy ? null : _showAdPrivacyOptions,
                     ),
@@ -149,7 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
             const SizedBox(height: 24),
-            _buildSectionTitle('앱 정보'),
+            _buildSectionTitle(_l10n.settingsAppInfoSection),
             const SizedBox(height: 12),
             _buildInfoCard(),
           ],
@@ -219,9 +284,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Column(
         children: [
-          const Text(
-            'TrackFollows 소개',
-            style: TextStyle(
+          Text(
+            _l10n.settingsAboutTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
@@ -229,9 +294,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
-          const Text(
-            'TrackFollows는 인스타그램 데이터를 기기에서 분석하는 도구입니다. 광고 서비스의 정보 처리에 관한 내용은 개인정보 처리방침에서 확인할 수 있습니다.',
-            style: TextStyle(
+          Text(
+            _l10n.settingsAboutBody,
+            style: const TextStyle(
               fontSize: 14,
               color: Colors.grey,
               height: 1.5,
@@ -241,7 +306,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
           if (_appVersion.isNotEmpty)
             Text(
-              '버전 $_appVersion ($_buildNumber)',
+              _l10n.settingsVersion(_appVersion, _buildNumber),
               style: const TextStyle(
                 fontSize: 12,
                 color: Colors.grey,
@@ -249,9 +314,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               textAlign: TextAlign.center,
             ),
           const SizedBox(height: 4),
-          const Text(
-            '© 2025-2026 TrackFollows. 모든 권리 보유.',
-            style: TextStyle(
+          Text(
+            _l10n.settingsCopyright,
+            style: const TextStyle(
               fontSize: 12,
               color: Colors.grey,
             ),

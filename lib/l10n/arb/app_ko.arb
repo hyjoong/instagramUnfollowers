@@ -1,0 +1,236 @@
+{
+  "@@locale": "ko",
+  "commonCancel": "취소",
+  "commonDelete": "삭제",
+  "commonRetry": "다시 시도",
+  "commonUnfollowers": "언팔로워",
+  "commonFans": "팬",
+  "commonMutual": "맞팔",
+  "commonFollowers": "팔로워",
+  "commonTotalFollowers": "총 팔로워",
+  "commonTotalFollowing": "총 팔로잉",
+  "commonNewFollowers": "새 팔로워",
+  "commonNotificationPermissionOff": "알림 권한이 꺼져 있어요. 기기 설정에서 알림을 허용해 주세요.",
+  "navAnalyze": "분석",
+  "navHistory": "히스토리",
+  "navSettings": "설정",
+  "mainFilePickFailed": "파일 선택에 실패했습니다",
+  "mainPreparingResults": "분석 결과를 준비하고 있어요",
+  "mainReminderPrompt": "누가 나를 언팔했는지는 다음 분석 때 알 수 있어요. 2주 뒤에 알려 드릴까요?",
+  "mainReminderAction": "알림 받기",
+  "mainReminderEnabled": "2주 뒤에 알려 드릴게요. 설정에서 끌 수 있어요.",
+  "mainExitTitle": "앱 종료",
+  "mainExitMessage": "앱을 종료하시겠습니까?",
+  "mainExitConfirm": "종료",
+  "loadingTitle": "인스타그램 언팔로워 분석",
+  "loadingMessage": "로딩 중...",
+  "errorTitle": "연결 오류",
+  "onboardingWelcomeTitle": "TrackFollows에 오신 것을 환영합니다",
+  "onboardingWelcomeBody": "인스타그램 팔로워 데이터를 분석하여 언팔로워, 맞팔 상태, 팔로우 날짜를 확인해보세요.",
+  "onboardingSafeTitle": "100% 안전하고 개인정보 보호",
+  "onboardingSafeBody": "모든 데이터 처리는 기기에서 이루어집니다. 개인정보를 수집하거나 저장하지 않습니다.",
+  "onboardingEasyTitle": "사용하기 쉬움",
+  "onboardingEasyBody": "인스타그램 데이터 파일을 업로드하기만 하면 즉시 분석 결과를 확인할 수 있습니다.",
+  "onboardingReadyTitle": "시작할 준비가 되었습니다",
+  "onboardingReadyBody": "인스타그램 팔로워 분석을 시작해보세요!",
+  "onboardingSkip": "건너뛰기",
+  "onboardingNext": "다음",
+  "onboardingStart": "시작하기",
+  "historyTitle": "분석 히스토리",
+  "historyLowOverlap": "두 기록의 팔로워가 거의 겹치지 않아요. 같은 계정의 기록인지 확인해 주세요.",
+  "historyDeleteTitle": "분석 기록 삭제",
+  "historyDeleteMessage": "이 분석 기록을 삭제하시겠습니까?",
+  "historyDeleted": "분석 기록이 삭제되었습니다",
+  "historyDeleteFailed": "삭제에 실패했습니다",
+  "historyShareSubject": "인스타그램 분석 결과",
+  "historyShareFooter": "TrackFollows 앱으로 생성됨",
+  "historyCompare": "두 기록 비교",
+  "historyCompareSelected": "고른 두 기록 비교하기",
+  "historyCompareHint": "비교할 기록 두 개를 골라 주세요 ({count}/2)",
+  "@historyCompareHint": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "historyEmptyTitle": "분석 히스토리가 없습니다",
+  "historyEmptyBody": "분석 결과가 여기에 표시됩니다",
+  "historyExportedOn": "{date} 내보내기",
+  "@historyExportedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "historyCounts": "팔로워 {followers} · 팔로잉 {following} · 언팔로워 {unfollowers}",
+  "@historyCounts": {
+    "placeholders": {
+      "followers": {
+        "type": "String"
+      },
+      "following": {
+        "type": "String"
+      },
+      "unfollowers": {
+        "type": "String"
+      }
+    }
+  },
+  "historyAnalyzedOn": "분석: {date}",
+  "@historyAnalyzedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "historyViewStats": "통계 보기",
+  "historyShare": "공유",
+  "historyFirstRecord": "첫 기록 · 다음 분석부터 변화를 비교해요",
+  "historyNoChange": "직전 기록과 팔로워 변화 없음",
+  "historyVsPrevious": "직전 기록 대비",
+  "historyLostCount": "언팔 {count}",
+  "@historyLostCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "historyGainedCount": "새 팔로워 {count}",
+  "@historyGainedCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "statsTitle": "분석 결과",
+  "statsNotFoundTitle": "분석 데이터를 찾을 수 없습니다",
+  "statsNotFoundBody": "삭제되었거나 존재하지 않는 데이터입니다",
+  "statsBack": "돌아가기",
+  "statsSummary": "분석 요약",
+  "statsNoData": "분석 데이터가 없습니다",
+  "statsDistribution": "팔로워 분포",
+  "statsDetailedStats": "상세 통계",
+  "statsDetails": "상세 정보",
+  "statsAnalysisDate": "분석 날짜",
+  "statsMutualRate": "맞팔 비율: {rate}%",
+  "@statsMutualRate": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "compareTitle": "기록 비교",
+  "compareRecentStats": "최근 기록 통계",
+  "compareAnalysisDay": "{date} (분석일)",
+  "@compareAnalysisDay": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "compareAnalysisDayNote": "(분석일)은 파일 이름에 내보낸 날짜가 없는 예전 기록이라 분석한 날로 표시했어요.",
+  "compareLostTitle": "나를 언팔한 사람",
+  "compareLostEmpty": "이 기간에 나를 언팔한 사람이 없어요.",
+  "compareNewEmpty": "이 기간에 새로 생긴 팔로워가 없어요.",
+  "compareRenamedTitle": "아이디를 바꾼 계정",
+  "compareDisappearedNote": "목록에서 사라진 계정 중에는 언팔 대신 계정을 비활성화·삭제한 경우도 있어요. 프로필을 눌러 확인해 보세요.",
+  "compareNoChange": "변화 없음",
+  "compareExportDateNote": "날짜는 인스타그램에서 파일을 내보낸 날이에요.",
+  "compareChange": "증감",
+  "compareLost": "언팔",
+  "appSettingsTitle": "앱 설정",
+  "appSettingsAnalysisSection": "분석 설정",
+  "appSettingsDataSection": "데이터 관리",
+  "appSettingsAnalysisNotify": "분석 알림",
+  "appSettingsAnalysisNotifyBody": "분석이 완료되면 알림을 받습니다",
+  "appSettingsAutoRefresh": "히스토리 자동 새로고침",
+  "appSettingsAutoRefreshBody": "히스토리 데이터를 자동으로 업데이트합니다",
+  "appSettingsClearHistory": "분석 히스토리 삭제",
+  "appSettingsClearHistoryBody": "저장된 모든 분석 데이터를 삭제합니다",
+  "appSettingsExportAll": "모든 데이터 내보내기",
+  "appSettingsExportAllBody": "모든 분석 데이터를 텍스트로 내보냅니다",
+  "appSettingsClearTitle": "히스토리 삭제",
+  "appSettingsClearMessage": "모든 분석 히스토리를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+  "appSettingsCleared": "분석 히스토리가 성공적으로 삭제되었습니다",
+  "appSettingsClearFailed": "히스토리 삭제에 실패했습니다",
+  "appSettingsNothingToExport": "내보낼 분석 데이터가 없습니다",
+  "appSettingsExportTitle": "TrackFollows 분석 데이터 내보내기",
+  "appSettingsExportCreated": "생성일: {date}",
+  "@appSettingsExportCreated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "appSettingsExportItem": "분석 {index}",
+  "@appSettingsExportItem": {
+    "placeholders": {
+      "index": {
+        "type": "String"
+      }
+    }
+  },
+  "appSettingsExportDate": "날짜",
+  "appSettingsExportFailed": "데이터 내보내기에 실패했습니다",
+  "settingsTitle": "설정",
+  "settingsNotificationsSection": "알림",
+  "settingsRecheckTitle": "다시 확인 알림",
+  "settingsRecheckBody": "분석하고 2주 뒤에 새 파일로 확인하라고 알려 드려요",
+  "settingsSupportSection": "지원 및 법적 고지",
+  "settingsFaq": "자주 묻는 질문",
+  "settingsTerms": "이용약관",
+  "settingsPrivacy": "개인정보 처리방침",
+  "settingsAdPrivacy": "광고 개인정보 설정",
+  "settingsAppInfoSection": "앱 정보",
+  "settingsAboutTitle": "TrackFollows 소개",
+  "settingsAboutBody": "TrackFollows는 인스타그램 데이터를 기기에서 분석하는 도구입니다. 광고 서비스의 정보 처리에 관한 내용은 개인정보 처리방침에서 확인할 수 있습니다.",
+  "settingsVersion": "버전 {version} ({build})",
+  "@settingsVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsCopyright": "© 2025-2026 TrackFollows. 모든 권리 보유.",
+  "settingsLanguage": "언어",
+  "settingsLanguageSystem": "기기 언어 따르기",
+  "settingsOpenLinkFailed": "링크를 열지 못했어요.",
+  "adConsentNotReady": "화면을 다시 연 뒤 시도해 주세요.",
+  "adConsentPreparing": "광고 개인정보 설정을 준비하고 있어요. 잠시 후 다시 시도해 주세요.",
+  "adConsentNothingToChange": "현재 변경할 광고 개인정보 설정이 없어요.",
+  "adConsentOpenFailed": "개인정보 설정을 열지 못했어요. 잠시 후 다시 시도해 주세요.",
+  "adConsentStatusFailed": "개인정보 설정 상태를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
+  "reminderTitle": "언팔 다시 확인할 때예요",
+  "reminderBody": "지난 분석 후 2주가 지났어요. 새 파일로 분석하면 그사이 나를 언팔한 사람을 알 수 있어요.",
+  "reminderChannelName": "다시 확인 알림",
+  "reminderChannelDescription": "분석 후 2주 뒤에 새 파일로 다시 확인하라고 알려 드려요",
+  "faqTitle": "자주 묻는 질문",
+  "faqIsSafeQuestion": "이 서비스는 안전한가요?",
+  "faqIsSafeAnswer": "TrackFollows는 인스타그램 비밀번호를 요구하거나 계정에 로그인하지 않습니다. 선택한 파일은 기기에서 분석합니다. 이용·오류 진단과 광고 서비스의 데이터 처리 방식은 개인정보 처리방침에서 확인할 수 있습니다.",
+  "faqDownloadTimeQuestion": "데이터 다운로드에 얼마나 시간이 걸리나요?",
+  "faqDownloadTimeAnswer": "내보내기 파일은 인스타그램에서 준비합니다. 준비 시간은 일정하지 않으므로 알림이나 내보내기 화면을 확인하고, 준비가 끝나면 ZIP 파일을 내려받으세요.",
+  "faqWhatIsUnfollowerQuestion": "언팔로워란 정확히 무엇인가요?",
+  "faqWhatIsUnfollowerAnswer": "제공한 파일에서 내가 팔로우하는 목록에는 있지만 나를 팔로우하는 목록에는 없는 계정입니다. 처음부터 나를 팔로우하지 않은 계정도 포함될 수 있습니다. 한 번의 내보내기 파일만으로 과거에 나를 팔로우했는지, 언제 언팔했는지는 확인할 수 없습니다.",
+  "faqThreadsQuestion": "스레드(Threads) 언팔로워도 확인할 수 있나요?",
+  "faqThreadsAnswer": "네. 인스타그램에서 받은 ZIP에 스레드 팔로워·팔로잉 목록이 들어 있으면 인스타그램과 별도로 스레드 결과를 보여 드립니다. 결과 화면 위쪽에서 인스타그램과 스레드를 전환해 볼 수 있습니다. 스레드 팔로워는 인스타그램 팔로워와 따로 집계되는 목록입니다.",
+  "faqIsFreeQuestion": "이 서비스를 사용하는데 비용이 드나요?",
+  "faqIsFreeAnswer": "아니요, 이 서비스는 완전 무료입니다. 모든 기능을 무료로 이용하실 수 있습니다.",
+  "faqIncorrectListQuestion": "언팔로워 목록이 예상과 다르게 표시됩니다. 왜 그런가요?",
+  "faqIncorrectListAnswer": "분석 결과는 내보내기 파일에 담긴 목록을 기준으로 하며 현재 인스타그램 화면과 다를 수 있습니다. 내보내기 시점, 선택한 기간, 계정의 삭제·비활성화 등이 목록과 집계에 영향을 줄 수 있습니다.\n\n내보내기 기간을 전체 기간으로 선택하고 팔로워·팔로잉 파일이 모두 포함되어 있는지 확인하세요. 새 파일을 받아도 현재 계정 상태와 일치한다고 보장할 수는 없습니다.",
+  "faqFileSelectErrorQuestion": "ZIP 파일을 선택할 수 없어요",
+  "faqFileSelectErrorAnswer": "카카오톡 등의 메시징 앱에서 링크를 열었을 때 파일 선택 기능이 정상적으로 작동하지 않을 수 있습니다. 이 경우 Chrome이나 Samsung Internet 등의 브라우저에서 직접 사이트에 접속하여 파일을 선택해보세요. 브라우저에서 직접 접속하면 일반적으로 파일을 정상적으로 선택할 수 있습니다",
+  "faqDataSecurityQuestion": "데이터 보안 및 개인정보 보호",
+  "faqDataSecurityAnswer": "분석을 위해 인스타그램 원본 파일, 계정명, 팔로워 목록을 서버로 전송하지 않습니다. 지난번 분석과 비교할 수 있도록 팔로워·팔로잉 아이디 목록을 이 기기(브라우저 또는 앱)에만 저장하며, 결과 화면의 '기록 지우기'로 언제든 지울 수 있습니다. 이용·오류 진단과 광고 서비스의 데이터 처리는 개인정보 처리방침을 확인해 주세요."
+}

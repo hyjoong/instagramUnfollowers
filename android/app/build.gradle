@@ -42,6 +42,8 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled true
+        // Keep only the app languages; "in" is the legacy resource code for Indonesian.
+        resourceConfigurations += ["ko", "en", "ja", "es", "fr", "de", "pt", "hi", "ru", "ar", "tr", "vi", "th", "id", "ms", "in"]
     }
 
     signingConfigs {

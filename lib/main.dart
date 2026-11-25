@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,10 @@ import 'ads/admob_config.dart';
 import 'ads/admob_interstitial.dart';
 import 'ads/ad_consent_controller.dart';
 import 'reminders/recheck_reminder.dart';
+import 'review/review_prompt.dart';
+import 'l10n/app_locale.dart';
+import 'l10n/platform_app_locale.dart';
+import 'l10n/gen/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,39 +33,79 @@ void main() async {
     debugPrint('Firebase initialization failed, but app will continue: $e');
   }
 
-  runApp(const MyApp());
+  // Resolve the app language before the first frame so the WebView and the
+  // native screens start in the same language.
+  final prefs = await SharedPreferences.getInstance();
+  final localeStore = await AppLocaleStore.load(
+    prefs,
+    WidgetsBinding.instance.platformDispatcher.locales,
+  );
+
+  // Android 13+ and iOS: the per-app language in the system settings and the one
+  // picked in the app are the same setting, whichever was changed last wins.
+  final platformSync = PlatformLocaleSync.create(localeStore, prefs);
+  await platformSync?.pull();
+
+  WidgetsBinding.instance.addObserver(DeviceLocaleObserver(
+    localeStore,
+    onChanged: () => unawaited(platformSync?.pull()),
+  ));
+
+  runApp(MyApp(localeStore: localeStore));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.localeStore});
+
+  final AppLocaleStore localeStore;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFEC4899)),
-        useMaterial3: true,
+    // Rebuilds with the new language when it changes in settings or on the web.
+    return ValueListenableBuilder<Locale>(
+      valueListenable: localeStore,
+      builder: (context, locale, _) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        onGenerateTitle: (context) => 'TrackFollows',
+        locale: locale,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFEC4899)),
+          useMaterial3: true,
+        ),
+        home: TrackFollowsPage(localeStore: localeStore),
       ),
-      home: const TrackFollowsPage(),
     );
   }
 }
 
 class TrackFollowsPage extends StatefulWidget {
-  const TrackFollowsPage({super.key});
+  const TrackFollowsPage({super.key, required this.localeStore});
+
+  final AppLocaleStore localeStore;
 
   @override
   State<TrackFollowsPage> createState() => _TrackFollowsPageState();
 }
 
 class _TrackFollowsPageState extends State<TrackFollowsPage> {
+  AppLocalizations get _l10n => AppLocalizations.of(context);
+
   final _adConfig = AdMobConfig.current;
   final _adConsent = AdConsentController();
   late final _interstitial = AdMobInterstitialController(
     adUnitId: _adConfig.interstitialAdUnitId,
   );
-  final _reminder = RecheckReminderController();
+  final _review = ReviewPromptController();
+  late final _reminder = RecheckReminderController(
+    locale: () => widget.localeStore.value,
+  );
   WebViewService? _webViewService;
   FirebaseService? _firebaseService;
   FileHandler? _fileHandler;
@@ -76,12 +121,20 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   void initState() {
     super.initState();
     _adConsent.addListener(_syncInterstitialConsent);
+    widget.localeStore.addListener(_onLocaleChanged);
     _checkOnboardingStatus();
   }
 
+  // Notification copy is fixed when scheduled; re-schedule it in the new
+  // language. The WebView follows too, whether the change came from the app
+  // settings, the device or the OS per-app language.
+  void _onLocaleChanged() {
+    unawaited(_reminder.onLocaleChanged());
+    unawaited(_webViewService?.showLocale(widget.localeStore.value));
+  }
+
   void _syncInterstitialConsent() {
-    _interstitial
-        .updateConsent(_adConfig.isTest || _adConsent.canRequestAds);
+    _interstitial.updateConsent(_adConfig.isTest || _adConsent.canRequestAds);
   }
 
   Future<void> _checkOnboardingStatus() async {
@@ -109,6 +162,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         onFilePickRequested: _handleFileSelection,
         onResetComplete: _onResetComplete,
         onAnalysisComplete: _onAnalysisComplete,
+        localeStore: widget.localeStore,
       );
 
       if (!mounted) return;
@@ -150,8 +204,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('파일 선택에 실패했습니다'),
+          SnackBar(
+            content: Text(_l10n.mainFilePickFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -175,14 +229,17 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   }
 
   Future<void> _afterAnalysis({required bool onAnalysisTab}) async {
-    final adShown =
-        onAnalysisTab &&
-            await _interstitial.onAnalysisCompleted(
-              beforeShow: _showAdLeadIn,
-            );
+    final adShown = onAnalysisTab &&
+        await _interstitial.onAnalysisCompleted(
+          beforeShow: _showAdLeadIn,
+        );
     await _reminder.onAnalysisCompleted();
-    // 광고가 뜬 분석에는 권유를 겹치지 않는다.
-    if (adShown || !onAnalysisTab || !mounted) return;
+    // 결과를 보고 있을 때만, 광고가 뜬 분석은 빼고 스토어 리뷰를 요청한다.
+    final reviewed = await _review.onAnalysisCompleted(
+      adShown: adShown || !onAnalysisTab,
+    );
+    // 광고나 리뷰 요청이 뜬 분석에는 권유를 겹치지 않는다.
+    if (adShown || reviewed || !onAnalysisTab || !mounted) return;
     if (!await _reminder.shouldPrompt() || !mounted) return;
     await _reminder.markPrompted();
     if (!mounted) return;
@@ -192,10 +249,11 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         // 하단 배너 광고를 가리지 않도록 그 위에 띄운다.
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 96),
-        content: const Text(
-          '누가 나를 언팔했는지는 다음 분석 때 알 수 있어요. 2주 뒤에 알려 드릴까요?',
+        content: Text(
+          _l10n.mainReminderPrompt,
         ),
-        action: SnackBarAction(label: '알림 받기', onPressed: _enableReminder),
+        action: SnackBarAction(
+            label: _l10n.mainReminderAction, onPressed: _enableReminder),
       ),
     );
   }
@@ -206,22 +264,22 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     unawaited(showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const PopScope(
+      builder: (context) => PopScope(
         canPop: false,
         child: Center(
           child: Card(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  SizedBox(width: 16),
-                  Text('분석 결과를 준비하고 있어요'),
+                  const SizedBox(width: 16),
+                  Text(_l10n.mainPreparingResults),
                 ],
               ),
             ),
@@ -242,8 +300,8 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 96),
         content: Text(
           enabled
-              ? '2주 뒤에 알려 드릴게요. 설정에서 끌 수 있어요.'
-              : '알림 권한이 꺼져 있어요. 기기 설정에서 알림을 허용해 주세요.',
+              ? _l10n.mainReminderEnabled
+              : _l10n.commonNotificationPermissionOff,
         ),
       ),
     );
@@ -292,6 +350,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
   @override
   void dispose() {
     _adConsent.removeListener(_syncInterstitialConsent);
+    widget.localeStore.removeListener(_onLocaleChanged);
     _interstitial.dispose();
     _adConsent.dispose();
     super.dispose();
@@ -379,6 +438,7 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
           // 설정 화면
           SettingsScreen(
             reminder: _reminder,
+            localeStore: widget.localeStore,
             adConsent:
                 _adConfig.enabled && !_adConfig.isTest ? _adConsent : null,
           ),
@@ -390,21 +450,21 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFFEC4899),
         unselectedItemColor: Colors.grey,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_outlined),
-            activeIcon: Icon(Icons.analytics),
-            label: '분석',
+            icon: const Icon(Icons.analytics_outlined),
+            activeIcon: const Icon(Icons.analytics),
+            label: _l10n.navAnalyze,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: '히스토리',
+            icon: const Icon(Icons.history_outlined),
+            activeIcon: const Icon(Icons.history),
+            label: _l10n.navHistory,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: '설정',
+            icon: const Icon(Icons.settings_outlined),
+            activeIcon: const Icon(Icons.settings),
+            label: _l10n.navSettings,
           ),
         ],
       ),
@@ -415,16 +475,16 @@ class _TrackFollowsPageState extends State<TrackFollowsPage> {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('앱 종료'),
-            content: const Text('앱을 종료하시겠습니까?'),
+            title: Text(_l10n.mainExitTitle),
+            content: Text(_l10n.mainExitMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('취소'),
+                child: Text(_l10n.commonCancel),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('종료'),
+                child: Text(_l10n.mainExitConfirm),
               ),
             ],
           ),

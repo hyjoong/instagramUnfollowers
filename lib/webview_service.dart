@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -9,12 +10,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'ads/admob_config.dart';
+import 'l10n/app_locale.dart';
 
 class WebViewService {
+  /// Web origin; development builds point it elsewhere with
+  /// `--dart-define=TRACKFOLLOWS_URL=...`. The language path goes after it.
+  static const webOrigin = String.fromEnvironment(
+    'TRACKFOLLOWS_URL',
+    defaultValue: 'https://trackfollows.com',
+  );
+
   WebViewController? controller;
+  AppLocaleStore? _localeStore;
   final FileHandler fileHandler = FileHandler();
   late FlutterLocalNotificationsPlugin notificationsPlugin;
-  bool _isWebViewReady = false;
+  final bool _isWebViewReady = false;
   Function()? onFilePickRequested;
   Function()? onResetComplete;
   Function()? onAnalysisComplete;
@@ -23,7 +33,9 @@ class WebViewService {
     Function()? onFilePickRequested,
     Function()? onResetComplete,
     Function()? onAnalysisComplete,
+    AppLocaleStore? localeStore,
   }) async {
+    _localeStore = localeStore;
     this.onFilePickRequested = onFilePickRequested;
     this.onResetComplete = onResetComplete;
     this.onAnalysisComplete = onAnalysisComplete;
@@ -42,7 +54,14 @@ class WebViewService {
           onPageStarted: (String url) {
             // 페이지 로딩 시작
           },
+          // The web switches language with client-side navigation
+          // (pushState), which does not fire onPageFinished.
+          onUrlChange: (UrlChange change) {
+            final url = change.url;
+            if (url != null) _rememberWebLocale(url);
+          },
           onPageFinished: (String url) async {
+            _rememberWebLocale(url);
             // 페이지 로딩 완료 후 Flutter 식별자 재설정
             await controller?.runJavaScript('''
               if (!window.isFlutterWebView) {
@@ -75,7 +94,7 @@ class WebViewService {
             return NavigationDecision.navigate;
           },
           onWebResourceError: (WebResourceError error) {
-            print('WebView error: ${error.description}');
+            debugPrint('WebView error: ${error.description}');
           },
         ),
       )
@@ -88,7 +107,7 @@ class WebViewService {
       ..addJavaScriptChannel(
         'unfollowerNotification',
         onMessageReceived: (JavaScriptMessage message) {
-          print(
+          debugPrint(
               'Received message from unfollowerNotification channel: ${message.message}');
           _handleUnfollowerNotification(message.message);
         },
@@ -96,14 +115,14 @@ class WebViewService {
       ..addJavaScriptChannel(
         'FilePicker',
         onMessageReceived: (JavaScriptMessage message) {
-          print('File picker requested');
+          debugPrint('File picker requested');
           onFilePickRequested?.call();
         },
       )
       ..addJavaScriptChannel(
         'ResetComplete',
         onMessageReceived: (JavaScriptMessage message) {
-          print('Reset complete');
+          debugPrint('Reset complete');
           onResetComplete?.call();
         },
       );
@@ -118,11 +137,9 @@ class WebViewService {
       );
     }
 
-    const webUrl = String.fromEnvironment(
-      'TRACKFOLLOWS_URL',
-      defaultValue: 'https://trackfollows.com',
+    await controller!.loadRequest(
+      Uri.parse(webUrlFor(webOrigin, localeStore?.value ?? fallbackLocale)),
     );
-    await controller!.loadRequest(Uri.parse(webUrl));
 
     // Android에서 <input type="file"> 지원
     if (Platform.isAndroid) {
@@ -186,6 +203,30 @@ class WebViewService {
     return result.toList();
   }
 
+  /// When the user switches language on the web (another `/{locale}` path on
+  /// our origin), keep that choice for the next launch and the native screens.
+  void _rememberWebLocale(String url) {
+    final store = _localeStore;
+    final uri = Uri.tryParse(url);
+    if (store == null || uri == null) return;
+    if (uri.host != Uri.parse(webOrigin).host) return;
+    final webLocale = localeFromWebUrl(url);
+    if (webLocale != store.value) unawaited(store.select(webLocale));
+  }
+
+  /// Reopens the web app in [locale] unless the page is already in it (a
+  /// switch made on the web itself leaves the page where it is).
+  Future<void> showLocale(Locale locale) async {
+    final current = await controller?.currentUrl();
+    final uri = current == null ? null : Uri.tryParse(current);
+    if (uri != null &&
+        uri.host == Uri.parse(webOrigin).host &&
+        localeFromWebUrl(current!) == locale) {
+      return;
+    }
+    await controller?.loadRequest(Uri.parse(webUrlFor(webOrigin, locale)));
+  }
+
   void _initializeNotifications() {
     try {
       notificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -210,102 +251,11 @@ class WebViewService {
         initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
           // 알림 탭 시 처리
-          print('Notification tapped: ${response.payload}');
+          debugPrint('Notification tapped: ${response.payload}');
         },
       );
     } catch (e) {
-      print('Failed to initialize notifications: $e');
-    }
-  }
-
-  void _injectJavaScript() {
-    try {
-      controller?.runJavaScript('''
-        console.log('Injecting JavaScript into WebView');
-        
-        // Flutter 웹뷰 식별자 설정
-        window.isFlutterWebView = true;
-        window.flutterApp = true;
-        window.isMobileApp = true;
-        window.platform = 'flutter';
-        
-        // Flutter JavaScript 채널 설정
-        window.Flutter = {
-          postMessage: function(message) {
-            console.log('Sending message to Flutter:', message);
-            Flutter.postMessage(message);
-          }
-        };
-        
-        // 분석 완료 시 알림 전송 함수
-        function sendAnalysisNotification(data) {
-          try {
-            console.log('Sending analysis notification:', data);
-            
-            // Flutter 채널로 메시지 전송
-            if (window.Flutter) {
-              window.Flutter.postMessage(JSON.stringify({
-                type: "unfollower_analysis_complete",
-                data: data
-              }));
-            }
-            
-            // 직접 채널로도 전송
-            if (window.unfollowerNotification) {
-              window.unfollowerNotification.postMessage(JSON.stringify({
-                type: "unfollower_analysis_complete",
-                data: data
-              }));
-            }
-          } catch (error) {
-            console.log("알림 전송 실패:", error);
-          }
-        }
-        
-        // 기존 분석 완료 코드에 알림 추가
-        const originalShowResults = window.showResults;
-        if (originalShowResults) {
-          window.showResults = function(unfollowersWithDates, fansWithDates, mutualFollowsWithDates, followers, following) {
-            console.log('Analysis results received');
-            
-            // 기존 결과 표시
-            originalShowResults(unfollowersWithDates, fansWithDates, mutualFollowsWithDates, followers, following);
-            
-            // 알림 전송
-            sendAnalysisNotification({
-              unfollowersCount: unfollowersWithDates.length,
-              fansCount: fansWithDates.length,
-              mutualCount: mutualFollowsWithDates.length,
-              totalFollowers: followers.length,
-              totalFollowing: following.length
-            });
-          };
-        }
-        
-        // 파일 데이터 설정 함수
-        window.setFileData = function(fileName, fileData, fileType) {
-          console.log('Setting file data:', fileName, fileType);
-          // 웹사이트의 파일 처리 함수 호출
-          if (window.handleFileUpload) {
-            window.handleFileUpload(fileName, fileData, fileType);
-          }
-        };
-        
-        // 웹뷰 식별자 확인 함수
-        window.isFlutterWebView = function() {
-          return true;
-        };
-        
-        console.log('JavaScript injection completed');
-        console.log('Flutter WebView identifiers set:', {
-          isFlutterWebView: window.isFlutterWebView,
-          flutterApp: window.flutterApp,
-          isMobileApp: window.isMobileApp,
-          platform: window.platform
-        });
-      ''');
-    } catch (e) {
-      print('Failed to inject JavaScript: $e');
+      debugPrint('Failed to initialize notifications: $e');
     }
   }
 
@@ -319,7 +269,7 @@ class WebViewService {
         _saveDetailedAnalysisToHistory(data['data']);
       }
     } catch (e) {
-      print('Failed to handle JavaScript message: $e');
+      debugPrint('Failed to handle JavaScript message: $e');
     }
   }
 
@@ -333,14 +283,14 @@ class WebViewService {
         _saveDetailedAnalysisToHistory(data['data']);
       }
     } catch (e) {
-      print('Failed to handle unfollower notification: $e');
+      debugPrint('Failed to handle unfollower notification: $e');
     }
   }
 
   void _saveDetailedAnalysisToHistory(Map<String, dynamic> data) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final historyKey = 'analysis_history';
+      const historyKey = 'analysis_history';
 
       // 기존 히스토리 가져오기
       final existingHistoryJson = prefs.getStringList(historyKey) ?? [];
@@ -378,12 +328,12 @@ class WebViewService {
 
       await prefs.setStringList(historyKey, historyJson);
 
-      print('Analysis history saved successfully');
+      debugPrint('Analysis history saved successfully');
 
       // 분석 완료 콜백 호출
       onAnalysisComplete?.call();
     } catch (e) {
-      print('Failed to save analysis history: $e');
+      debugPrint('Failed to save analysis history: $e');
     }
   }
 
@@ -391,7 +341,7 @@ class WebViewService {
     try {
       return await controller?.canGoBack() ?? false;
     } catch (e) {
-      print('Failed to check if can go back: $e');
+      debugPrint('Failed to check if can go back: $e');
       return false;
     }
   }
@@ -400,7 +350,7 @@ class WebViewService {
     try {
       await controller?.goBack();
     } catch (e) {
-      print('Failed to go back: $e');
+      debugPrint('Failed to go back: $e');
     }
   }
 
@@ -408,7 +358,7 @@ class WebViewService {
       String fileName, String fileData, String fileType) async {
     try {
       if (!_isWebViewReady) {
-        print('WebView is not ready yet');
+        debugPrint('WebView is not ready yet');
         return false;
       }
 
@@ -422,7 +372,7 @@ class WebViewService {
       ''');
       return true;
     } catch (e) {
-      print('Failed to set file in WebView: $e');
+      debugPrint('Failed to set file in WebView: $e');
       return false;
     }
   }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_locale.dart';
+import '../l10n/gen/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -19,6 +21,8 @@ class AnalysisVisualizationScreen extends StatefulWidget {
 class _AnalysisVisualizationScreenState
     extends State<AnalysisVisualizationScreen> {
   Map<String, dynamic>? _analysisData;
+
+  AppLocalizations get _l10n => AppLocalizations.of(context);
   bool _isLoading = true;
 
   @override
@@ -58,9 +62,9 @@ class _AnalysisVisualizationScreenState
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text(
-          '분석 결과',
-          style: TextStyle(
+        title: Text(
+          _l10n.statsTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -114,18 +118,18 @@ class _AnalysisVisualizationScreenState
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            '분석 데이터를 찾을 수 없습니다',
-            style: TextStyle(
+          Text(
+            _l10n.statsNotFoundTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            '삭제되었거나 존재하지 않는 데이터입니다',
-            style: TextStyle(
+          Text(
+            _l10n.statsNotFoundBody,
+            style: const TextStyle(
               fontSize: 14,
               color: Colors.grey,
             ),
@@ -134,7 +138,7 @@ class _AnalysisVisualizationScreenState
           ElevatedButton.icon(
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.arrow_back),
-            label: const Text('돌아가기'),
+            label: Text(_l10n.statsBack),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEC4899),
               foregroundColor: Colors.white,
@@ -168,9 +172,9 @@ class _AnalysisVisualizationScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '분석 요약',
-            style: TextStyle(
+          Text(
+            _l10n.statsSummary,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
@@ -181,21 +185,21 @@ class _AnalysisVisualizationScreenState
             children: [
               Expanded(
                 child: _buildStatItem(
-                  '언팔로워',
+                  _l10n.commonUnfollowers,
                   _analysisData!['unfollowersCount'].toString(),
                   Colors.red,
                 ),
               ),
               Expanded(
                 child: _buildStatItem(
-                  '팬',
+                  _l10n.commonFans,
                   _analysisData!['fansCount'].toString(),
                   Colors.green,
                 ),
               ),
               Expanded(
                 child: _buildStatItem(
-                  '맞팔',
+                  _l10n.commonMutual,
                   _analysisData!['mutualCount'].toString(),
                   Colors.blue,
                 ),
@@ -269,10 +273,10 @@ class _AnalysisVisualizationScreenState
             ),
           ],
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            '분석 데이터가 없습니다',
-            style: TextStyle(
+            _l10n.statsNoData,
+            style: const TextStyle(
               fontSize: 16,
               color: Colors.grey,
             ),
@@ -341,9 +345,9 @@ class _AnalysisVisualizationScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '팔로워 분포',
-            style: TextStyle(
+          Text(
+            _l10n.statsDistribution,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
@@ -364,11 +368,11 @@ class _AnalysisVisualizationScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildLegendItem('언팔로워', Colors.red),
+              _buildLegendItem(_l10n.commonUnfollowers, Colors.red),
               const SizedBox(width: 16),
-              _buildLegendItem('팬', Colors.green),
+              _buildLegendItem(_l10n.commonFans, Colors.green),
               const SizedBox(width: 16),
-              _buildLegendItem('맞팔', Colors.blue),
+              _buildLegendItem(_l10n.commonMutual, Colors.blue),
             ],
           ),
         ],
@@ -431,9 +435,9 @@ class _AnalysisVisualizationScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '상세 통계',
-            style: TextStyle(
+          Text(
+            _l10n.statsDetailedStats,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
@@ -458,7 +462,13 @@ class _AnalysisVisualizationScreenState
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        const titles = ['언팔로워', '팬', '맞팔', '총 팔로워', '총 팔로잉'];
+                        final titles = [
+                          _l10n.commonUnfollowers,
+                          _l10n.commonFans,
+                          _l10n.commonMutual,
+                          _l10n.commonTotalFollowers,
+                          _l10n.commonTotalFollowing,
+                        ];
                         return Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
@@ -538,18 +548,18 @@ class _AnalysisVisualizationScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '상세 정보',
-            style: TextStyle(
+          Text(
+            _l10n.statsDetails,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
           const SizedBox(height: 16),
-          _buildDetailRow('총 팔로워', _analysisData!['totalFollowers'].toString()),
-          _buildDetailRow('총 팔로잉', _analysisData!['totalFollowing'].toString()),
-          _buildDetailRow('분석 날짜', _formatDate(_analysisData!['timestamp'])),
+          _buildDetailRow(_l10n.commonTotalFollowers, _analysisData!['totalFollowers'].toString()),
+          _buildDetailRow(_l10n.commonTotalFollowing, _analysisData!['totalFollowing'].toString()),
+          _buildDetailRow(_l10n.statsAnalysisDate, _formatDate(_analysisData!['timestamp'])),
           const SizedBox(height: 16),
           _buildEngagementRate(),
         ],
@@ -606,7 +616,7 @@ class _AnalysisVisualizationScreenState
           ),
           const SizedBox(width: 8),
           Text(
-            '맞팔 비율: ${rate.toStringAsFixed(1)}%',
+            _l10n.statsMutualRate(rate.toStringAsFixed(1)),
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -621,7 +631,8 @@ class _AnalysisVisualizationScreenState
   String _formatDate(String timestamp) {
     try {
       final date = DateTime.parse(timestamp).toLocal();
-      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final locale = Localizations.localeOf(context).toLanguageTag();
+      return appDateFormat(locale).format(date);
     } catch (e) {
       return timestamp;
     }

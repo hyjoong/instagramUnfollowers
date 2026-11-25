@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:convert';
 
+import '../l10n/gen/app_localizations.dart';
+
 class ThemeSettingsScreen extends StatefulWidget {
   const ThemeSettingsScreen({super.key});
 
@@ -11,6 +13,8 @@ class ThemeSettingsScreen extends StatefulWidget {
 }
 
 class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
+  AppLocalizations get _l10n => AppLocalizations.of(context);
+
   bool _notificationsEnabled = true;
   bool _autoRefreshEnabled = true;
 
@@ -39,9 +43,9 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text(
-          '앱 설정',
-          style: TextStyle(
+        title: Text(
+          _l10n.appSettingsTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
@@ -59,10 +63,10 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('분석 설정'),
+            _buildSectionTitle(_l10n.appSettingsAnalysisSection),
             _buildNotificationCard(),
             const SizedBox(height: 20),
-            _buildSectionTitle('데이터 관리'),
+            _buildSectionTitle(_l10n.appSettingsDataSection),
             _buildDataCard(),
           ],
         ),
@@ -117,21 +121,21 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '분석 알림',
-                      style: TextStyle(
+                      _l10n.appSettingsAnalysisNotify,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
                     Text(
-                      '분석이 완료되면 알림을 받습니다',
-                      style: TextStyle(
+                      _l10n.appSettingsAnalysisNotifyBody,
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
@@ -167,21 +171,21 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '히스토리 자동 새로고침',
-                      style: TextStyle(
+                      _l10n.appSettingsAutoRefresh,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
                     Text(
-                      '히스토리 데이터를 자동으로 업데이트합니다',
-                      style: TextStyle(
+                      _l10n.appSettingsAutoRefreshBody,
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                       ),
@@ -225,8 +229,8 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
       child: Column(
         children: [
           _buildDataRow(
-            '분석 히스토리 삭제',
-            '저장된 모든 분석 데이터를 삭제합니다',
+            _l10n.appSettingsClearHistory,
+            _l10n.appSettingsClearHistoryBody,
             Icons.delete_forever,
             Colors.red,
             () {
@@ -235,8 +239,8 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
           ),
           const SizedBox(height: 16),
           _buildDataRow(
-            '모든 데이터 내보내기',
-            '모든 분석 데이터를 텍스트로 내보냅니다',
+            _l10n.appSettingsExportAll,
+            _l10n.appSettingsExportAllBody,
             Icons.download,
             Colors.blue,
             () {
@@ -307,21 +311,21 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('히스토리 삭제'),
-        content: const Text('모든 분석 히스토리를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'),
+        title: Text(_l10n.appSettingsClearTitle),
+        content: Text(_l10n.appSettingsClearMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(_l10n.commonCancel),
           ),
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
               await _clearHistory();
             },
-            child: const Text(
-              '삭제',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              _l10n.commonDelete,
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -335,8 +339,8 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
       await prefs.remove('analysis_history');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('분석 히스토리가 성공적으로 삭제되었습니다'),
+          SnackBar(
+            content: Text(_l10n.appSettingsCleared),
             backgroundColor: Colors.green,
           ),
         );
@@ -344,8 +348,8 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('히스토리 삭제에 실패했습니다'),
+          SnackBar(
+            content: Text(_l10n.appSettingsClearFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -354,6 +358,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
   }
 
   Future<void> _exportAllData() async {
+    final l10n = _l10n;
     try {
       final prefs = await SharedPreferences.getInstance();
       final historyJson = prefs.getStringList('analysis_history') ?? [];
@@ -361,8 +366,8 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
       if (historyJson.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('내보낼 분석 데이터가 없습니다'),
+            SnackBar(
+              content: Text(_l10n.appSettingsNothingToExport),
               backgroundColor: Colors.orange,
             ),
           );
@@ -370,26 +375,26 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
         return;
       }
 
-      String exportText = 'TrackFollows 분석 데이터 내보내기\n';
-      exportText += '생성일: ${DateTime.now().toString()}\n\n';
+      String exportText = '${l10n.appSettingsExportTitle}\n';
+      exportText += '${l10n.appSettingsExportCreated(DateTime.now().toString())}\n\n';
 
       for (int i = 0; i < historyJson.length; i++) {
         final data = jsonDecode(historyJson[i]);
-        exportText += '분석 ${i + 1}:\n';
-        exportText += '날짜: ${data['timestamp']}\n';
-        exportText += '언팔로워: ${data['unfollowersCount']}\n';
-        exportText += '팬: ${data['fansCount']}\n';
-        exportText += '맞팔: ${data['mutualCount']}\n';
-        exportText += '총 팔로워: ${data['totalFollowers']}\n';
-        exportText += '총 팔로잉: ${data['totalFollowing']}\n\n';
+        exportText += '${l10n.appSettingsExportItem('${i + 1}')}:\n';
+        exportText += '${l10n.appSettingsExportDate}: ${data['timestamp']}\n';
+        exportText += '${l10n.commonUnfollowers}: ${data['unfollowersCount']}\n';
+        exportText += '${l10n.commonFans}: ${data['fansCount']}\n';
+        exportText += '${l10n.commonMutual}: ${data['mutualCount']}\n';
+        exportText += '${l10n.commonTotalFollowers}: ${data['totalFollowers']}\n';
+        exportText += '${l10n.commonTotalFollowing}: ${data['totalFollowing']}\n\n';
       }
 
-      Share.share(exportText, subject: 'TrackFollows 분석 데이터 내보내기');
+      Share.share(exportText, subject: l10n.appSettingsExportTitle);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('데이터 내보내기에 실패했습니다'),
+          SnackBar(
+            content: Text(_l10n.appSettingsExportFailed),
             backgroundColor: Colors.red,
           ),
         );

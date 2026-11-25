@@ -17,7 +17,7 @@ class AdMobConfig {
   static const androidTestBannerId = 'ca-app-pub-3940256099942544/9214589741';
   static const iosTestBannerId = 'ca-app-pub-3940256099942544/2435281174';
 
-  // Interstitial units allow text/image only (video off) in the AdMob console.
+  // Interstitial units allow text/image/video in the AdMob console.
   // An empty id makes release builds skip interstitials.
   static const androidProductionInterstitialId =
       'ca-app-pub-2951563150255051/5705291157';

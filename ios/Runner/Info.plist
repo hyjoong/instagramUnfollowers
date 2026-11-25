@@ -16,6 +16,24 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ko</string>
+		<string>en</string>
+		<string>ja</string>
+		<string>es</string>
+		<string>fr</string>
+		<string>de</string>
+		<string>pt</string>
+		<string>hi</string>
+		<string>ru</string>
+		<string>ar</string>
+		<string>tr</string>
+		<string>vi</string>
+		<string>th</string>
+		<string>id</string>
+		<string>ms</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>Trackfollows</string>
 	<key>CFBundleExecutable</key>

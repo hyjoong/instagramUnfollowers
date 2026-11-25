@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/gen/app_localizations.dart';
+
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -49,9 +52,9 @@ class LoadingScreen extends StatelessWidget {
             const SizedBox(height: 8),
 
             // 태그라인
-            const Text(
-              '인스타그램 언팔로워 분석',
-              style: TextStyle(
+            Text(
+              l10n.loadingTitle,
+              style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
               ),
@@ -67,9 +70,9 @@ class LoadingScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // 로딩 메시지
-            const Text(
-              '로딩 중...',
-              style: TextStyle(
+            Text(
+              l10n.loadingMessage,
+              style: const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
               ),

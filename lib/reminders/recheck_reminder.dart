@@ -1,15 +1,41 @@
 import 'dart:io' show Platform;
+import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../l10n/app_locale.dart';
+import '../l10n/gen/app_localizations.dart';
+
+/// Notification copy, fixed at scheduling time in the app language.
+class ReminderText {
+  const ReminderText({
+    required this.title,
+    required this.body,
+    required this.channelName,
+    required this.channelDescription,
+  });
+
+  factory ReminderText.of(AppLocalizations l10n) => ReminderText(
+        title: l10n.reminderTitle,
+        body: l10n.reminderBody,
+        channelName: l10n.reminderChannelName,
+        channelDescription: l10n.reminderChannelDescription,
+      );
+
+  final String title;
+  final String body;
+  final String channelName;
+  final String channelDescription;
+}
+
 /// OS boundary so the reminder flow can be tested without notifications.
 abstract interface class ReminderBackend {
   /// Asks the OS for notification permission; true when it is granted.
   Future<bool> requestPermission();
-  Future<void> schedule(DateTime when);
+  Future<void> schedule(DateTime when, ReminderText text);
   Future<void> cancel();
 }
 
@@ -40,19 +66,20 @@ class LocalNotificationReminderBackend implements ReminderBackend {
   }
 
   @override
-  Future<void> schedule(DateTime when) => _plugin.zonedSchedule(
+  Future<void> schedule(DateTime when, ReminderText text) =>
+      _plugin.zonedSchedule(
         notificationId,
-        '언팔 다시 확인할 때예요',
-        '지난 분석 후 2주가 지났어요. 새 파일로 분석하면 그사이 나를 언팔한 사람을 알 수 있어요.',
+        text.title,
+        text.body,
         // An absolute instant, so the device's time zone database isn't needed.
         tz.TZDateTime.from(when.toUtc(), tz.UTC),
-        const NotificationDetails(
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'recheck_reminder',
-            '다시 확인 알림',
-            channelDescription: '분석 후 2주 뒤에 새 파일로 다시 확인하라고 알려 드려요',
+            text.channelName,
+            channelDescription: text.channelDescription,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
         // Inexact is enough for a two-week reminder and needs no alarm permission.
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -71,12 +98,18 @@ class RecheckReminderController {
     ReminderBackend? backend,
     Future<SharedPreferences> Function()? prefs,
     DateTime Function()? now,
+    Locale Function()? locale,
   })  : _backend = backend ?? LocalNotificationReminderBackend(),
         _prefs = prefs ?? SharedPreferences.getInstance,
-        _now = now ?? DateTime.now;
+        _now = now ?? DateTime.now,
+        _locale = locale ?? (() => fallbackLocale);
 
   static const enabledKey = 'recheck_reminder_enabled';
   static const promptCountKey = 'recheck_reminder_prompt_count';
+
+  /// When the pending reminder fires (ms since epoch), so a language change
+  /// can re-schedule it at the same time.
+  static const dueKey = 'recheck_reminder_due';
   static const delay = Duration(days: 14);
 
   /// How many times the opt-in may be offered before we stop asking.
@@ -85,6 +118,14 @@ class RecheckReminderController {
   final ReminderBackend _backend;
   final Future<SharedPreferences> Function() _prefs;
   final DateTime Function() _now;
+  final Locale Function() _locale;
+
+  ReminderText get _text => ReminderText.of(lookupAppLocalizations(_locale()));
+
+  Future<void> _schedule(DateTime when) async {
+    await _backend.schedule(when, _text);
+    await (await _prefs()).setInt(dueKey, when.millisecondsSinceEpoch);
+  }
 
   Future<bool> isEnabled() async =>
       (await _prefs()).getBool(enabledKey) ?? false;
@@ -105,7 +146,7 @@ class RecheckReminderController {
   Future<bool> enable() async {
     try {
       if (!await _backend.requestPermission()) return false;
-      await _backend.schedule(_now().add(delay));
+      await _schedule(_now().add(delay));
     } catch (error) {
       debugPrint('Recheck reminder enable failed: $error');
       return false;
@@ -127,9 +168,24 @@ class RecheckReminderController {
   Future<void> onAnalysisCompleted() async {
     if (!await isEnabled()) return;
     try {
-      await _backend.schedule(_now().add(delay));
+      await _schedule(_now().add(delay));
     } catch (error) {
       debugPrint('Recheck reminder schedule failed: $error');
+    }
+  }
+
+  /// The copy is fixed when scheduled, so after a language change the pending
+  /// reminder is scheduled again at the same time with the new language.
+  Future<void> onLocaleChanged() async {
+    if (!await isEnabled()) return;
+    final due = (await _prefs()).getInt(dueKey);
+    if (due == null) return;
+    final when = DateTime.fromMillisecondsSinceEpoch(due);
+    if (!when.isAfter(_now())) return;
+    try {
+      await _schedule(when);
+    } catch (error) {
+      debugPrint('Recheck reminder reschedule failed: $error');
     }
   }
 }
